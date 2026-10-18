@@ -1,6 +1,8 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FadeInDownView } from '@/components/ui/FadeInDownView';
 
 import { ErrorState } from '@/components/ui/ErrorState';
 import { FilterSheet, type FilterGroup } from '@/components/ui/FilterSheet';
@@ -11,6 +13,10 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { VoiceSearchButton } from '@/components/ai/VoiceSearchButton';
+import { useVoiceSearch } from '@/core/ai/voice/useVoiceSearch';
+import { useDoctorRecommendations } from '@/core/ai/recs/useRecommendations';
+import { useInteractionStore } from '@/core/ai/recs/interactions';
 import { useTranslation } from '@/i18n';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -49,6 +55,17 @@ export function DoctorListScreen({ navigation }: Props) {
   const [filtersVisible, setFiltersVisible] = useState(false);
 
   const list = useDoctorList();
+  const voice = useVoiceSearch();
+  const docRecs = useDoctorRecommendations();
+  const trackSearch = useInteractionStore((s) => s.trackSearch);
+
+  const handleVoiceResult = useCallback(
+    (text: string) => {
+      list.setQuery(text);
+      trackSearch(text);
+    },
+    [list, trackSearch],
+  );
 
   const activeFilterCount =
     (list.filters.specialties?.length ?? 0) +
@@ -59,12 +76,17 @@ export function DoctorListScreen({ navigation }: Props) {
     (list.filters.availableOnly ? 1 : 0);
 
   const openDoctor = useCallback(
-    (doctor: Doctor) => navigation.navigate('DoctorDetail', { doctorId: doctor.id }),
+    (doctor: Doctor) => {
+      useInteractionStore.getState().trackDoctorView(doctor.id, doctor.specialty);
+      navigation.navigate('DoctorDetail', { doctorId: doctor.id });
+    },
     [navigation],
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: Doctor }) => <DoctorCard doctor={item} onPress={openDoctor} />,
+    ({ item, index }: { item: Doctor; index: number }) => (
+      <DoctorCard doctor={item} index={index} onPress={openDoctor} />
+    ),
     [openDoctor],
   );
 
@@ -141,17 +163,109 @@ export function DoctorListScreen({ navigation }: Props) {
   );
 
   const header = (
-    <View style={styles.header}>
+    <FadeInDownView duration={400} style={styles.header}>
       <OfflineBanner />
-      <Text style={[styles.title, { color: theme.colors.text }]} accessibilityRole="header">
-        {t('consult.title')}
-      </Text>
-      <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>{t('consult.findDoctor')}</Text>
+
+      {/* Clinical Telehealth Hero Banner */}
+      <View style={[styles.clinicHeroCard, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }, theme.shadows.card]}>
+        <View style={styles.clinicHeroTop}>
+          <View style={[styles.clinicIconBox, { backgroundColor: theme.colors.primaryMuted }]}>
+            <Ionicons name="medkit" size={24} color={theme.colors.primary} />
+          </View>
+          <View style={styles.clinicHeroTitles}>
+            <View style={styles.verifiedRow}>
+              <Ionicons name="shield-checkmark" size={14} color={theme.colors.primary} />
+              <Text style={[styles.verifiedTag, { color: theme.colors.primary }]}>
+                Verified AYUSH Doctors
+              </Text>
+            </View>
+            <Text style={[styles.clinicTitle, { color: theme.colors.text }]}>
+              Ayurvedic Consultations
+            </Text>
+          </View>
+        </View>
+
+        <Text style={[styles.clinicSubtitle, { color: theme.colors.textSecondary }]}>
+          Connect with registered Ayurvedic Vaidyas via encrypted HD video or clinic visits.
+        </Text>
+
+        <View style={[styles.heroPillsRow, { borderTopColor: theme.colors.borderLight }]}>
+          <View style={styles.heroFeatureItem}>
+            <Ionicons name="videocam-outline" size={13} color={theme.colors.accent} />
+            <Text style={[styles.heroFeatureText, { color: theme.colors.textSecondary }]}>Instant Video</Text>
+          </View>
+          <View style={styles.heroFeatureItem}>
+            <Ionicons name="document-text-outline" size={13} color={theme.colors.accent} />
+            <Text style={[styles.heroFeatureText, { color: theme.colors.textSecondary }]}>E-Prescription</Text>
+          </View>
+          <View style={styles.heroFeatureItem}>
+            <Ionicons name="time-outline" size={13} color={theme.colors.accent} />
+            <Text style={[styles.heroFeatureText, { color: theme.colors.textSecondary }]}>Flexible Slots</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Search Bar with Doctor Voice Input */}
       <SearchBar
-        value={list.query}
+        value={voice.isListening || voice.isProcessing ? voice.interimText || list.query : list.query}
         onChangeText={list.setQuery}
-        placeholder={`${t('common.search')} doctors, clinics…`}
+        placeholder="Search doctor name, specialty, clinic…"
+        rightAccessory={
+          <VoiceSearchButton
+            isListening={voice.isListening}
+            onPress={() => voice.start(handleVoiceResult)}
+            onCancel={voice.cancel}
+          />
+        }
       />
+
+      {voice.isListening ? (
+        <View style={styles.voiceHintRow}>
+          <Ionicons name="mic" size={13} color={theme.colors.primary} />
+          <Text style={[styles.voiceHint, { color: theme.colors.primary }]}>
+            {voice.interimText || t('ai.voiceListening')}
+          </Text>
+        </View>
+      ) : null}
+      {voice.error ? (
+        <Text style={[styles.voiceHint, { color: theme.colors.danger }]}>{voice.error}</Text>
+      ) : null}
+
+      {/* Quick Specialty Filter Rail */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.specialtyRail}
+      >
+        {SPECIALTIES.map((spec) => {
+          const isSelected = list.filters.specialties?.includes(spec);
+          return (
+            <Chip
+              key={spec}
+              label={spec}
+              selected={isSelected}
+              onPress={() => list.toggleSpecialty(spec)}
+              size="sm"
+            />
+          );
+        })}
+      </ScrollView>
+
+      {/* Top-rated doctors rail — only when no active search */}
+      {list.query.length === 0 && !list.isLoading ? (
+        <View style={styles.topDocWrap}>
+          <View style={styles.topDocTitleRow}>
+            <Ionicons name="star" size={15} color={theme.colors.herbGold} />
+            <Text style={[styles.topDocTitle, { color: theme.colors.text }]} accessibilityRole="header">
+              Top Rated Doctors
+            </Text>
+          </View>
+          {docRecs.topRated.slice(0, 3).map((doc, idx) => (
+            <DoctorCard key={doc.id} doctor={doc} index={idx} onPress={openDoctor} />
+          ))}
+        </View>
+      ) : null}
+
       <View style={styles.controlsRow}>
         <View style={styles.sortWrap}>
           <SegmentedControl
@@ -171,7 +285,7 @@ export function DoctorListScreen({ navigation }: Props) {
       <Text style={[styles.count, { color: theme.colors.textMuted }]}>
         {t('common.results', { count: list.total })}
       </Text>
-    </View>
+    </FadeInDownView>
   );
 
   const ListEmptyComponent = (() => {
@@ -239,7 +353,69 @@ export function DoctorListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingBottom: 32 },
-  header: { gap: 10, paddingBottom: 12 },
+  header: { gap: 12, paddingBottom: 14 },
+  clinicHeroCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 12,
+  },
+  clinicHeroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  clinicIconBox: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clinicHeroTitles: {
+    flex: 1,
+    gap: 2,
+  },
+  verifiedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  verifiedTag: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  clinicTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: -0.3,
+  },
+  clinicSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  heroPillsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    paddingTop: 10,
+  },
+  heroFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  heroFeatureText: {
+    fontSize: 11.5,
+    fontWeight: '600',
+  },
+  specialtyRail: {
+    gap: 8,
+    paddingVertical: 4,
+  },
   title: { fontSize: 26, fontWeight: '800' },
   subtitle: { fontSize: 14, marginTop: -6 },
   controlsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -247,4 +423,10 @@ const styles = StyleSheet.create({
   count: { fontSize: 12.5 },
   loadingList: { gap: 10 },
   skeletonCard: { marginBottom: 10 },
+  voiceHint: { fontSize: 12, fontWeight: '600' },
+  voiceHintRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  topDocWrap: { gap: 8 },
+  topDocTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  topDocTitle: { fontSize: 16, fontWeight: '700' },
 });
+

@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 
 import { LoginScreen } from '@/screens/LoginScreen';
+import { ProfileGate } from '@/components/forms/ProfileGate';
 import { useAuthStore } from '@/store/authStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -50,6 +51,7 @@ export function RootNavigator() {
           <Stack.Screen name="Login" component={LoginScreen} />
         )}
       </Stack.Navigator>
+      {status === 'signedIn' ? <ProfileGate /> : null}
     </NavigationContainer>
   );
 }

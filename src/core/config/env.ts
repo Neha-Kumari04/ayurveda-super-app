@@ -54,6 +54,7 @@ export const env = {
   features: {
     sync: toBool(process.env.EXPO_PUBLIC_FEATURE_SYNC, true),
     biometric: toBool(process.env.EXPO_PUBLIC_FEATURE_BIOMETRIC, true),
+    videoConsult: toBool(process.env.EXPO_PUBLIC_FEATURE_VIDEO_CONSULT, true),
   },
 } as const;
 

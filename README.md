@@ -122,16 +122,27 @@ Month/year-grouped timeline (SectionList), filter by type/tag/provider/date, rec
 - **Biometric lock** — `expo-local-authentication` gate on the login screen (enrolled devices only).
 - **Design system** — 15+ primitives with light/dark tokens, accessible roles/labels, and haptics.
 
+## AI features
+
+- **Voice search** — animated mic button in the product & doctor search bars (`src/core/ai/voice/`). Tap → pulsing listen state → returns recognized text into the query. Ships with a **pluggable recognizer** (`VoiceRecognizer` interface + `createRecognizer()` factory); the default mock simulates latency + Ayurvedic-domain sample phrases. Swap in `@react-native-voice/voice`, Whisper, or `expo-speech-recognition` by implementing the same interface.
+- **Recommendation engine** (`src/core/ai/recs/`) — pure, fully unit-tested scoring:
+  - **For You** — content-based personalisation (category/tag/brand/search affinity, seen-item penalty, popularity blend); cold-start falls back to top-rated.
+  - **Top Rated** — rating × log-scaled review volume.
+  - **Similar items** — item-to-item cosine similarity on a 5-dim vector (category, tag-Jaccard, price, rating, brand).
+  - **Trending** — popularity boosted by wishlist/cart/view engagement.
+  - Interaction tracking is a persisted Zustand store (`ai:interactions`), so recommendations improve as the user browses.
+- **UI** — `RecommendationRail` (horizontal rails above product grids), `SimilarSection` ("You might also like" on product detail), `VoiceSearchButton` (animated mic with pulse rings + a11y announcements).
+
 ## Testing
 
 ```
 __tests__/
-├── unit/      # date, search, booking validation, cart maths, timeline, sync queue, API/chaos
+├── unit/      # date, search, booking validation, cart maths, timeline, sync queue, API/chaos, recommendation engine
 ├── hooks/     # debounce hooks (RNTL v14 async renderHook)
 └── e2e/       # full user journey: sign in → shop → product → cart → checkout → order
 ```
 
-- **87 tests / 10 suites**, all green.
+- **99 tests / 11 suites**, all green.
 - React Native Testing Library v14 (async `render`/`userEvent`); Jest preset `jest-expo`; in-memory AsyncStorage and official safe-area mock in `jest.setup.ts`.
 - The e2e test renders the real `App` tree — real navigation, stores, query client, and mock backend.
 

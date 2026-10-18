@@ -1,10 +1,39 @@
 import { ApiError, humanizeApiError } from '@/core/api/errors';
 import { api, request, setAuthTokenProvider } from '@/core/api/client';
+import { toPaginated } from '@/core/api/paginate';
 import { consultationApi } from '@/modules/consultation/api';
 import { shopApi } from '@/modules/shop/api';
 import { getProducts, PRODUCT_COUNT } from '@/data/generators/products';
 import { getDoctors, DOCTOR_COUNT } from '@/data/generators/doctors';
 import { getRecords, RECORD_COUNT } from '@/data/generators/healthRecords';
+
+describe('toPaginated', () => {
+  it('passes through a well-formed payload', () => {
+    const page = toPaginated<{ id: string }>({ items: [{ id: 'a' }], page: 2, pageSize: 10, total: 25, hasMore: true });
+    expect(page.items).toEqual([{ id: 'a' }]);
+    expect(page.page).toBe(2);
+    expect(page.hasMore).toBe(true);
+    expect(page.partial).toBeUndefined();
+  });
+
+  it('tolerates a malformed/partial payload without producing undefined items', () => {
+    const page = toPaginated<unknown>({ unexpected: true }, { page: 1, pageSize: 20 });
+    expect(page.items).toEqual([]);
+    expect(page.page).toBe(1);
+    expect(page.partial).toBe(true);
+    expect(page.items.every((item) => item != null)).toBe(true);
+  });
+
+  it('drops null/undefined items', () => {
+    const page = toPaginated<unknown>({ items: [null, { id: 'a' }, undefined], total: 3 });
+    expect(page.items).toEqual([{ id: 'a' }]);
+  });
+
+  it('derives hasMore from page/pageSize/total when absent', () => {
+    expect(toPaginated<unknown>({ items: [], page: 1, pageSize: 20, total: 100 }).hasMore).toBe(true);
+    expect(toPaginated<unknown>({ items: [], page: 5, pageSize: 20, total: 100 }).hasMore).toBe(false);
+  });
+});
 
 describe('generated datasets', () => {
   it('generates the expected dataset sizes', () => {
@@ -109,6 +138,23 @@ describe('api client against the mock backend', () => {
     // No token wired → 401 → session_expired.
     setAuthTokenProvider(() => null);
     await expect(consultationApi.listBookings()).rejects.toMatchObject({ kind: 'session_expired' });
+  });
+
+  it('accepts a persisted token after a mock-server restart', async () => {
+    // The mock keeps sessions in memory and loses them on reload, while the
+    // client keeps a persisted token. A well-formed, unexpired token must work.
+    const token = `tok.${Date.now() + 60 * 60 * 1000}.persisted`;
+    setAuthTokenProvider(() => token);
+    const result = await consultationApi.listBookings();
+    expect(Array.isArray(result.items)).toBe(true);
+  });
+
+  it('rejects a malformed token', async () => {
+    setAuthTokenProvider(() => 'not-a-real-token');
+    // Distinct query so a cached GET response can't mask the auth check.
+    await expect(consultationApi.listBookings('probe_malformed')).rejects.toMatchObject({
+      kind: 'session_expired',
+    });
   });
 
   it('paginates and filters products', async () => {

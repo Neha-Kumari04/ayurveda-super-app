@@ -1,10 +1,14 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { AnimatedCard } from '@/components/ui/AnimatedCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { useSettingsStore } from '@/store/settingsStore';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { Input } from '@/components/ui/Input';
@@ -36,6 +40,7 @@ export function BookingsScreen({ navigation }: Props) {
 
   const bookingsQuery = useBookings();
   const cancelMutation = useCancelBooking();
+  const videoEnabled = useSettingsStore((s) => s.isFeatureEnabled('consultation.video_enabled'));
 
   const { upcoming, past } = useMemo(() => {
     const items = bookingsQuery.data?.items ?? [];
@@ -60,13 +65,16 @@ export function BookingsScreen({ navigation }: Props) {
   }, [cancelTarget, cancelMutation, toast, t]);
 
   const renderItem = useCallback(
-    ({ item }: { item: Booking }) => (
-      <Card style={styles.card}>
+    ({ item, index }: { item: Booking; index: number }) => (
+      <AnimatedCard index={index} style={styles.card}>
         <View style={styles.cardHeader}>
           <View style={styles.cardTitleCol}>
-            <Text style={[styles.doctorName, { color: theme.colors.text }]} numberOfLines={1}>
-              {item.doctorName}
-            </Text>
+            <View style={styles.doctorHeaderRow}>
+              <Ionicons name="medkit" size={14} color={theme.colors.primary} />
+              <Text style={[styles.doctorName, { color: theme.colors.text }]} numberOfLines={1}>
+                {item.doctorName}
+              </Text>
+            </View>
             <Text style={[styles.specialty, { color: theme.colors.primary }]}>{item.specialty}</Text>
           </View>
           {item.syncStatus === 'pending' ? (
@@ -80,9 +88,13 @@ export function BookingsScreen({ navigation }: Props) {
           )}
         </View>
 
-        <Text style={[styles.meta, { color: theme.colors.textSecondary }]}>
-          {formatDateTime(item.start)} · {formatCurrency(item.fee)}
-        </Text>
+        <View style={styles.timeRow}>
+          <Ionicons name="calendar-outline" size={13} color={theme.colors.textMuted} />
+          <Text style={[styles.meta, { color: theme.colors.textSecondary }]}>
+            {formatDateTime(item.start)} · {formatCurrency(item.fee)}
+          </Text>
+        </View>
+
         {item.reason ? (
           <Text style={[styles.reason, { color: theme.colors.textMuted }]} numberOfLines={2}>
             Reason: {item.reason}
@@ -92,19 +104,35 @@ export function BookingsScreen({ navigation }: Props) {
           <Text style={[styles.reason, { color: theme.colors.danger }]}>Cancelled: {item.cancelReason}</Text>
         ) : null}
 
-        {isCancellable(item) ? (
-          <Button
-            label={t('consult.cancelBooking')}
-            variant="danger"
-            size="sm"
-            onPress={() => setCancelTarget(item)}
-            style={styles.cancelBtn}
-          />
-        ) : null}
-      </Card>
+        <View style={styles.actions}>
+          {videoEnabled && item.status === 'confirmed' ? (
+            <Button
+              label={t('consult.joinVideoCall')}
+              size="sm"
+              icon={<Ionicons name="videocam" size={15} color={theme.colors.onPrimary} />}
+              onPress={() =>
+                navigation.navigate('VideoCall', {
+                  bookingId: item.id,
+                  doctorName: item.doctorName,
+                  specialty: item.specialty,
+                })
+              }
+            />
+          ) : null}
+          {isCancellable(item) ? (
+            <Button
+              label={t('consult.cancelBooking')}
+              variant="danger"
+              size="sm"
+              onPress={() => setCancelTarget(item)}
+            />
+          ) : null}
+        </View>
+      </AnimatedCard>
     ),
-    [theme, t],
+    [theme, t, navigation, videoEnabled],
   );
+
 
   const keyExtractor = useCallback((item: Booking) => item.id, []);
 
@@ -192,11 +220,13 @@ const styles = StyleSheet.create({
   card: { gap: 6 },
   cardHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 },
   cardTitleCol: { flex: 1, gap: 2 },
+  doctorHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   doctorName: { fontSize: 16, fontWeight: '700' },
   specialty: { fontSize: 13, fontWeight: '600' },
+  timeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 2 },
   meta: { fontSize: 13.5 },
   reason: { fontSize: 12.5, fontStyle: 'italic' },
-  cancelBtn: { alignSelf: 'flex-start', marginTop: 6 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
   modalBackdrop: {
     position: 'absolute',
     top: 0,

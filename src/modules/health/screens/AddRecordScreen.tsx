@@ -1,11 +1,14 @@
 import React, { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FadeInDownView } from '@/components/ui/FadeInDownView';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { Input } from '@/components/ui/Input';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useToast } from '@/components/toast/ToastProvider';
 import { useTranslation } from '@/i18n';
@@ -73,19 +76,32 @@ export function AddRecordScreen({ navigation }: Props) {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 100 }]}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.title, { color: theme.colors.text }]} accessibilityRole="header">
-          {t('health.addRecord')}
-        </Text>
+        {/* Top Header Row with Back Button */}
+        <FadeInDownView duration={350} style={styles.topNavRow}>
+          <PressableScale
+            onPress={() => navigation.goBack()}
+            style={[styles.backBtn, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }]}
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+          >
+            <Ionicons name="chevron-back" size={20} color={theme.colors.text} />
+          </PressableScale>
+          <Text style={[styles.navTitle, { color: theme.colors.text }]}>New Medical Record</Text>
+          <View style={{ width: 38 }} />
+        </FadeInDownView>
 
-        <Card style={styles.card}>
-          <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Type</Text>
-          <SegmentedControl
-            options={TYPES.map((value) => ({ value, label: t(`health.${value}`) }))}
-            value={type}
-            onChange={setType}
-            accessibilityLabel="Record type"
-          />
-        </Card>
+        <FadeInDownView delay={100} duration={400}>
+          <Card style={styles.card}>
+            <Text style={[styles.label, { color: theme.colors.textSecondary }]}>Clinical Record Type</Text>
+            <SegmentedControl
+              options={TYPES.map((value) => ({ value, label: t(`health.${value}`) }))}
+              value={type}
+              onChange={setType}
+              accessibilityLabel="Record type"
+            />
+          </Card>
+        </FadeInDownView>
+
 
         <Card style={styles.card}>
           <Input
@@ -158,7 +174,26 @@ export function AddRecordScreen({ navigation }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  content: { paddingHorizontal: 16, gap: 12 },
+  content: { paddingHorizontal: 16, gap: 14 },
+  topNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+  },
+  backBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
   title: { fontSize: 26, fontWeight: '800' },
   card: { gap: 10 },
   label: { fontSize: 13, fontWeight: '600' },

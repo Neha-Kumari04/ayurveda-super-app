@@ -1,13 +1,14 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { useTranslation } from '@/i18n';
 import { useTheme } from '@/theme/ThemeProvider';
 import { BookingsScreen } from '@/modules/consultation/screens/BookingsScreen';
 import { DoctorDetailScreen } from '@/modules/consultation/screens/DoctorDetailScreen';
 import { DoctorListScreen } from '@/modules/consultation/screens/DoctorListScreen';
+import { VideoCallScreen } from '@/modules/consultation/screens/VideoCallScreen';
 import { ProductDetailScreen } from '@/modules/shop/screens/ProductDetailScreen';
 import { ProductListScreen } from '@/modules/shop/screens/ProductListScreen';
 import { CartScreen } from '@/modules/shop/screens/CartScreen';
@@ -38,6 +39,7 @@ function ConsultStackNavigator() {
       <ConsultStack.Screen name="DoctorList" component={DoctorListScreen} />
       <ConsultStack.Screen name="DoctorDetail" component={DoctorDetailScreen} />
       <ConsultStack.Screen name="Bookings" component={BookingsScreen} />
+      <ConsultStack.Screen name="VideoCall" component={VideoCallScreen} options={{ presentation: 'fullScreenModal' }} />
     </ConsultStack.Navigator>
   );
 }
@@ -64,11 +66,14 @@ function HealthStackNavigator() {
   );
 }
 
-const TAB_ICONS: Record<keyof MainTabParamList, string> = {
-  ConsultTab: '🩺',
-  ShopTab: '🛒',
-  HealthTab: '📋',
-  SettingsTab: '⚙️',
+const TAB_ICONS: Record<
+  keyof MainTabParamList,
+  { focused: React.ComponentProps<typeof Ionicons>['name']; unfocused: React.ComponentProps<typeof Ionicons>['name'] }
+> = {
+  ConsultTab: { focused: 'medical', unfocused: 'medical-outline' },
+  ShopTab: { focused: 'flask', unfocused: 'flask-outline' },
+  HealthTab: { focused: 'fitness', unfocused: 'fitness-outline' },
+  SettingsTab: { focused: 'person-circle', unfocused: 'person-circle-outline' },
 };
 
 export function MainTabs() {
@@ -81,13 +86,26 @@ export function MainTabs() {
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.textMuted,
-        tabBarStyle: {
-          backgroundColor: theme.colors.surface,
-          borderTopColor: theme.colors.border,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '700',
+          letterSpacing: 0.1,
+          marginBottom: 2,
         },
-        tabBarIcon: ({ focused }) => (
-          <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.55 }}>{TAB_ICONS[route.name]}</Text>
-        ),
+        tabBarStyle: {
+          backgroundColor: theme.colors.surfaceElevated,
+          borderTopColor: theme.colors.border,
+          borderTopWidth: 1,
+          height: 60,
+          paddingTop: 6,
+          paddingBottom: 8,
+          ...theme.shadows.card,
+        },
+        tabBarIcon: ({ color, size, focused }) => {
+          const iconPair = TAB_ICONS[route.name];
+          const iconName = focused ? iconPair.focused : iconPair.unfocused;
+          return <Ionicons name={iconName} size={size + (focused ? 2 : 0)} color={color} />;
+        },
       })}
     >
       <Tab.Screen name="ConsultTab" component={ConsultStackNavigator} options={{ title: t('tabs.consult') }} />

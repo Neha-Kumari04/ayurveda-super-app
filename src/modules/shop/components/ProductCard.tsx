@@ -2,6 +2,7 @@ import React, { memo } from 'react';
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { PressableScale } from '@/components/ui/PressableScale';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatCurrency } from '@/utils/format';
 
@@ -25,7 +26,7 @@ export const ProductImage = memo(function ({
     <View
       style={[
         styles.container,
-        { width: size, height: size, borderRadius, backgroundColor: theme.colors.skeleton },
+        { width: size, height: size, borderRadius, backgroundColor: theme.colors.borderLight },
       ]}
       accessibilityRole="image"
       accessibilityLabel={accessibilityLabel}
@@ -64,24 +65,27 @@ export const ProductCard = memo(function ({
   const discount = Math.round(((product.mrp - product.price) / product.mrp) * 100);
 
   return (
-    <Pressable
+    <PressableScale
       onPress={() => onPress(product)}
       accessibilityRole="button"
       accessibilityLabel={`${product.name}, ${formatCurrency(product.price)}`}
-      style={({ pressed }) => [
+      activeScale={0.96}
+      style={[
         layout === 'grid' ? styles.grid : styles.row,
         {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: theme.colors.surfaceElevated,
           borderColor: theme.colors.border,
-          opacity: pressed ? 0.92 : 1,
         },
+        theme.shadows.card,
       ]}
     >
       <ProductImage uri={product.imageUrl} size={layout === 'grid' ? 120 : 88} accessibilityLabel={product.name} />
       <View style={styles.info}>
-        <Text style={[styles.brand, { color: theme.colors.textMuted }]} numberOfLines={1}>
-          {product.brand}
-        </Text>
+        <View style={styles.badgeRow}>
+          <Text style={[styles.brand, { color: theme.colors.primary }]} numberOfLines={1}>
+            {product.brand}
+          </Text>
+        </View>
         <Text style={[styles.name, { color: theme.colors.text }]} numberOfLines={2}>
           {product.name}
         </Text>
@@ -96,7 +100,11 @@ export const ProductCard = memo(function ({
         </View>
         {!product.inStock ? (
           <Text style={[styles.outOfStock, { color: theme.colors.danger }]}>Out of stock</Text>
-        ) : null}
+        ) : (
+          <View style={[styles.verifiedPill, { backgroundColor: theme.colors.primaryMuted }]}>
+            <Text style={[styles.verifiedPillText, { color: theme.colors.primary }]}>Ayush Certified</Text>
+          </View>
+        )}
       </View>
       {onToggleWishlist ? (
         <Pressable
@@ -111,9 +119,10 @@ export const ProductCard = memo(function ({
           </Text>
         </Pressable>
       ) : null}
-    </Pressable>
+    </PressableScale>
   );
 });
+
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden' },
@@ -133,12 +142,26 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   info: { flex: 1, gap: 2 },
-  brand: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.3 },
-  name: { fontSize: 13, fontWeight: '500', lineHeight: 17 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  brand: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.3 },
+  name: { fontSize: 13, fontWeight: '600', lineHeight: 17 },
   priceRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 4, flexWrap: 'wrap' },
   price: { fontSize: 15, fontWeight: '800' },
   mrp: { fontSize: 12, textDecorationLine: 'line-through' },
   discount: { fontSize: 12, fontWeight: '700' },
   outOfStock: { fontSize: 11, fontWeight: '600', marginTop: 2 },
+  verifiedPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  verifiedPillText: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
   wish: { position: 'absolute', top: 8, right: 8, padding: 4 },
 });
+

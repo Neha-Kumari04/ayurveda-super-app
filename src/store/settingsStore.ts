@@ -67,6 +67,7 @@ export const useSettingsStore = create<SettingsState>()(
         // Local env-based fallbacks for launch flags.
         if (flag === 'sync.enabled') return env.features.sync;
         if (flag === 'biometric.enabled') return env.features.biometric;
+        if (flag === 'consultation.video_enabled') return env.features.videoConsult;
         return false;
       },
     }),

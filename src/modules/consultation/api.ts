@@ -1,4 +1,5 @@
 import { api } from '@/core/api/client';
+import { toPaginated } from '@/core/api/paginate';
 
 import type { Doctor, DoctorSearchParams, Booking, TimeSlot, SortOption } from './types';
 import type { Paginated, QueryParams } from '@/types';
@@ -19,8 +20,9 @@ export function toDoctorQueryParams(params: DoctorSearchParams & { page?: number
 }
 
 export const consultationApi = {
-  listDoctors(params: DoctorSearchParams & { page?: number; pageSize?: number }): Promise<Paginated<Doctor>> {
-    return api.get<Paginated<Doctor>>('/doctors', toDoctorQueryParams(params), { cacheTtlMs: 5 * 60 * 1000 });
+  async listDoctors(params: DoctorSearchParams & { page?: number; pageSize?: number }): Promise<Paginated<Doctor>> {
+    const raw = await api.get<unknown>('/doctors', toDoctorQueryParams(params), { cacheTtlMs: 5 * 60 * 1000 });
+    return toPaginated<Doctor>(raw, { page: params.page, pageSize: params.pageSize });
   },
 
   getDoctor(id: string): Promise<Doctor> {

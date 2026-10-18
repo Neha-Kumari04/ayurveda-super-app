@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
 
+import type { ReactNode } from 'react';
+
 export interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
@@ -10,6 +12,8 @@ export interface SearchBarProps {
   autoFocus?: boolean;
   onSubmit?: () => void;
   onClear?: () => void;
+  /** Rendered at the trailing edge (e.g. a voice-search mic button). */
+  rightAccessory?: ReactNode;
 }
 
 export const SearchBar = memo(function ({
@@ -19,6 +23,7 @@ export const SearchBar = memo(function ({
   autoFocus,
   onSubmit,
   onClear,
+  rightAccessory,
 }: SearchBarProps) {
   const theme = useTheme();
 
@@ -43,6 +48,7 @@ export const SearchBar = memo(function ({
         accessibilityLabel={placeholder}
         accessibilityRole="search"
       />
+      {rightAccessory}
       {value.length > 0 ? (
         <Pressable
           onPress={() => {

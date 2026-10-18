@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -8,12 +9,17 @@ import { api } from '@/core/api/client';
 import { logger, setCrashReporter, type CrashReporter } from '@/core/logger/logger';
 import { startNetworkMonitoring } from '@/core/sync/networkMonitor';
 import { flushQueue, initSyncQueue } from '@/core/sync/syncQueue';
+import { BootScreen } from '@/components/BootScreen';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ToastProvider } from '@/components/toast/ToastProvider';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { useAuthStore } from '@/store/authStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { ThemeProvider } from '@/theme/ThemeProvider';
+
+// Keep the native splash up until the first frame is ready, with a short fade.
+SplashScreen.preventAutoHideAsync();
+SplashScreen.setOptions({ duration: 400, fade: true });
 
 const queryClient = createQueryClient();
 
@@ -52,18 +58,23 @@ export default function App() {
     let stopMonitoring: (() => void) | undefined;
 
     const setup = async () => {
-      setCrashReporter(new ConsoleCrashReporter());
-      stopMonitoring = startNetworkMonitoring();
+      try {
+        setCrashReporter(new ConsoleCrashReporter());
+        stopMonitoring = startNetworkMonitoring();
 
-      await Promise.all([useAuthStore.getState().bootstrap(), initSyncQueue(syncOperation)]);
-      void useSettingsStore.getState().fetchRemoteConfig();
-      void flushQueue();
+        await Promise.all([useAuthStore.getState().bootstrap(), initSyncQueue(syncOperation)]);
+        void useSettingsStore.getState().fetchRemoteConfig();
+        void flushQueue();
 
-      logger.info('App initialised', {
-        mockApi: process.env.EXPO_PUBLIC_USE_MOCK_API !== 'false',
-      });
-
-      setReady(true);
+        logger.info('App initialised', {
+          mockApi: process.env.EXPO_PUBLIC_USE_MOCK_API !== 'false',
+        });
+      } catch (error) {
+        logger.error('App bootstrap failed', { error });
+      } finally {
+        // Even on a partial boot we must leave the splash — ErrorBoundary takes over.
+        setReady(true);
+      }
     };
 
     void setup();
@@ -71,7 +82,12 @@ export default function App() {
     return () => stopMonitoring?.();
   }, []);
 
-  if (!ready) return null;
+  // Dismiss the native splash (with fade) once the boot screen is up.
+  useEffect(() => {
+    if (ready) void SplashScreen.hideAsync();
+  }, [ready]);
+
+  if (!ready) return <BootScreen />;
 
   return (
     <QueryClientProvider client={queryClient}>

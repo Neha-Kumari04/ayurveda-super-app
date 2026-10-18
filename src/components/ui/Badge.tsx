@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
 
-export type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
+export type BadgeTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info' | 'doctor' | 'pulse' | 'gold';
 
 export interface BadgeProps {
   label: string;
@@ -20,6 +20,9 @@ export const Badge = memo(function ({ label, tone = 'neutral', size = 'md' }: Ba
     warning: { bg: theme.colors.warningMuted, fg: theme.colors.warning },
     danger: { bg: theme.colors.dangerMuted, fg: theme.colors.danger },
     info: { bg: theme.colors.infoMuted, fg: theme.colors.info },
+    doctor: { bg: theme.colors.doctorBadgeBg, fg: theme.colors.doctorBadge },
+    pulse: { bg: theme.colors.pulseLiveBg, fg: theme.colors.pulseLive },
+    gold: { bg: theme.colors.herbGoldBg, fg: theme.colors.herbGold },
   }[tone];
 
   return (

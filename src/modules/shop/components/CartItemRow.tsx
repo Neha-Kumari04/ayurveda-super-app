@@ -15,6 +15,8 @@ export interface CartItemRowProps {
   onRemove: (productId: string) => void;
 }
 
+import { PressableScale } from '@/components/ui/PressableScale';
+
 export const CartItemRow = memo(function ({
   product,
   quantity,
@@ -25,40 +27,38 @@ export const CartItemRow = memo(function ({
   const theme = useTheme();
 
   return (
-    <View style={[styles.row, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
-      <ProductImage uri={product.imageUrl} size={72} accessibilityLabel={product.name} />
+    <View style={[styles.row, { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border }, theme.shadows.subtle]}>
+      <ProductImage uri={product.imageUrl} size={76} borderRadius={12} accessibilityLabel={product.name} />
       <View style={styles.info}>
         <Text style={[styles.name, { color: theme.colors.text }]} numberOfLines={2}>
           {product.name}
         </Text>
         <Text style={[styles.brand, { color: theme.colors.textMuted }]}>{product.brand}</Text>
-        <Text style={[styles.price, { color: theme.colors.text }]}>{formatCurrency(product.price)}</Text>
+        <Text style={[styles.price, { color: theme.colors.primary }]}>{formatCurrency(product.price)}</Text>
       </View>
       <View style={styles.actions}>
-        <Pressable
+        <PressableScale
           onPress={() => onRemove(product.id)}
-          hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={`Remove ${product.name} from cart`}
+          style={[styles.removeBtn, { backgroundColor: theme.colors.dangerMuted }]}
         >
-          <Text style={{ color: theme.colors.danger, fontSize: 15 }}>✕</Text>
-        </Pressable>
-        <View style={[styles.stepper, { borderColor: theme.colors.border }]}>
-          <Pressable
+          <Text style={{ color: theme.colors.danger, fontSize: 13, fontWeight: '700' }}>✕</Text>
+        </PressableScale>
+        <View style={[styles.stepper, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}>
+          <PressableScale
             onPress={() => onDecrement(product.id)}
-            hitSlop={6}
             accessibilityRole="button"
             accessibilityLabel={`Decrease quantity of ${product.name}`}
             style={styles.stepBtn}
           >
             <Text style={[styles.stepText, { color: theme.colors.text }]}>−</Text>
-          </Pressable>
+          </PressableScale>
           <Text style={[styles.qty, { color: theme.colors.text }]} accessibilityLabel={`Quantity ${quantity}`}>
             {quantity}
           </Text>
-          <Pressable
+          <PressableScale
             onPress={() => onIncrement(product.id)}
-            hitSlop={6}
             disabled={quantity >= 10}
             accessibilityRole="button"
             accessibilityLabel={`Increase quantity of ${product.name}`}
@@ -67,7 +67,7 @@ export const CartItemRow = memo(function ({
             <Text style={[styles.stepText, { color: quantity >= 10 ? theme.colors.textMuted : theme.colors.text }]}>
               +
             </Text>
-          </Pressable>
+          </PressableScale>
         </View>
       </View>
     </View>
@@ -98,4 +98,11 @@ const styles = StyleSheet.create({
   stepBtn: { paddingHorizontal: 12, paddingVertical: 6 },
   stepText: { fontSize: 16, fontWeight: '700' },
   qty: { fontSize: 14, fontWeight: '700', minWidth: 18, textAlign: 'center' },
+  removeBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

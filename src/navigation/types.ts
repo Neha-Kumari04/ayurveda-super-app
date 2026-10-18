@@ -7,6 +7,7 @@ export type ConsultStackParamList = {
   DoctorList: undefined;
   DoctorDetail: { doctorId: string };
   Bookings: undefined;
+  VideoCall: { bookingId: string; doctorName: string; specialty: string };
 };
 
 export type ShopStackParamList = {

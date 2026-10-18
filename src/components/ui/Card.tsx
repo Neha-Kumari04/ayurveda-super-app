@@ -1,7 +1,8 @@
 import React, { memo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/theme/ThemeProvider';
+import { PressableScale } from './PressableScale';
 
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -32,7 +33,9 @@ export const Card = memo(function ({
           backgroundColor: elevated ? theme.colors.surfaceElevated : theme.colors.surface,
           borderColor: theme.colors.border,
           padding: padded ? theme.spacing.lg : 0,
+          borderRadius: theme.radius.lg,
         },
+        elevated ? theme.shadows.card : null,
         style,
       ]}
     >
@@ -43,20 +46,20 @@ export const Card = memo(function ({
   if (!onPress) return content;
 
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      style={({ pressed }) => ({ opacity: pressed ? 0.9 : 1 })}
+      activeScale={0.98}
     >
       {content}
-    </Pressable>
+    </PressableScale>
   );
 });
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
   },
 });
+

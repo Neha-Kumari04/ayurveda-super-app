@@ -1,8 +1,9 @@
 import React, { memo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '@/theme/ThemeProvider';
+import { PressableScale } from './PressableScale';
 
 import type { StyleProp, ViewStyle } from 'react-native';
 
@@ -54,7 +55,7 @@ export const Button = memo(function ({
   }[size];
 
   return (
-    <Pressable
+    <PressableScale
       onPress={() => {
         if (isDisabled) return;
         if (haptic) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -64,14 +65,16 @@ export const Button = memo(function ({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
-      style={({ pressed }) => [
+      activeScale={0.97}
+      haptic={false}
+      style={[
         styles.base,
         {
           backgroundColor: palette.bg,
           borderColor: palette.border,
           paddingVertical: sizeStyles.paddingVertical,
           paddingHorizontal: sizeStyles.paddingHorizontal,
-          opacity: isDisabled ? 0.5 : pressed ? 0.85 : 1,
+          opacity: isDisabled ? 0.5 : 1,
         },
         fullWidth && styles.fullWidth,
         style,
@@ -87,7 +90,7 @@ export const Button = memo(function ({
           </Text>
         </View>
       )}
-    </Pressable>
+    </PressableScale>
   );
 });
 

@@ -1,8 +1,9 @@
 import React, { memo, useCallback } from 'react';
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
 import { useTheme } from '@/theme/ThemeProvider';
+import { PressableScale } from './PressableScale';
 
 export interface ChipProps {
   label: string;
@@ -32,19 +33,20 @@ export const Chip = memo(function ({
   const padding = size === 'sm' ? { paddingVertical: 4, paddingHorizontal: 9 } : { paddingVertical: 7, paddingHorizontal: 12 };
 
   return (
-    <Pressable
+    <PressableScale
       onPress={handlePress}
       disabled={!onPress}
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={accessibilityLabel ?? label}
-      style={({ pressed }) => [
+      activeScale={0.94}
+      haptic={false}
+      style={[
         styles.chip,
         padding,
         {
           backgroundColor: selected ? theme.colors.primaryMuted : theme.colors.surface,
           borderColor: selected ? theme.colors.primary : theme.colors.border,
-          opacity: pressed ? 0.8 : 1,
         },
       ]}
     >
@@ -69,7 +71,7 @@ export const Chip = memo(function ({
           ✕
         </Text>
       ) : null}
-    </Pressable>
+    </PressableScale>
   );
 });
 

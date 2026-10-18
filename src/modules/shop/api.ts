@@ -1,4 +1,5 @@
 import { api } from '@/core/api/client';
+import { toPaginated } from '@/core/api/paginate';
 
 import type { Product, ProductSearchParams } from './types';
 import type { Paginated, QueryParams } from '@/types';
@@ -18,8 +19,9 @@ export function toProductQueryParams(params: ProductSearchParams & { page?: numb
 }
 
 export const shopApi = {
-  listProducts(params: ProductSearchParams & { page?: number; pageSize?: number }): Promise<Paginated<Product>> {
-    return api.get<Paginated<Product>>('/products', toProductQueryParams(params), { cacheTtlMs: 5 * 60 * 1000 });
+  async listProducts(params: ProductSearchParams & { page?: number; pageSize?: number }): Promise<Paginated<Product>> {
+    const raw = await api.get<unknown>('/products', toProductQueryParams(params), { cacheTtlMs: 5 * 60 * 1000 });
+    return toPaginated<Product>(raw, { page: params.page, pageSize: params.pageSize });
   },
 
   getProduct(id: string): Promise<Product> {

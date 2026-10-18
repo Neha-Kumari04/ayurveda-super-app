@@ -1,8 +1,9 @@
 import React, { memo, useCallback, useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatTime } from '@/utils/format';
 import { isPast } from '@/utils/date';
@@ -30,24 +31,27 @@ export const SlotPicker = memo(function ({ slots, loading, partial, selectedSlot
       const selected = slot.id === selectedSlotId;
 
       return (
-        <Pressable
+        <PressableScale
           key={slot.id}
           disabled={disabled}
           onPress={() => onSelect(slot)}
           accessibilityRole="button"
           accessibilityState={{ selected, disabled }}
           accessibilityLabel={`${formatTime(slot.start)}${expired ? ' expired' : slot.isBooked ? ' booked' : ''}`}
-          style={({ pressed }) => [
+          activeScale={0.92}
+          haptic={!disabled}
+          style={[
             styles.slot,
             {
               backgroundColor: selected
                 ? theme.colors.primary
                 : disabled
-                  ? theme.colors.skeleton
-                  : theme.colors.surface,
+                  ? theme.colors.borderLight
+                  : theme.colors.surfaceElevated,
               borderColor: selected ? theme.colors.primary : theme.colors.border,
-              opacity: pressed && !disabled ? 0.85 : 1,
+              opacity: disabled ? 0.5 : 1,
             },
+            selected ? theme.shadows.subtle : null,
           ]}
         >
           <Text
@@ -69,11 +73,12 @@ export const SlotPicker = memo(function ({ slots, loading, partial, selectedSlot
               booked
             </Text>
           ) : null}
-        </Pressable>
+        </PressableScale>
       );
     },
     [selectedSlotId, onSelect, theme, now],
   );
+
 
   if (loading) {
     return (

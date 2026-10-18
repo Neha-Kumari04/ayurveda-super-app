@@ -82,14 +82,23 @@ function maybeCorruptGet<T>(body: T): MockResponse {
 
 function requireAuth(params: QueryParams | undefined, headers?: Record<string, string>): Session {
   const token = headers?.Authorization?.replace('Bearer ', '');
-  if (!token || !sessions.has(token)) {
+  if (!token) {
     throw ApiError.http(401);
   }
   const expiresAt = Number.parseInt(token.split('.')[1] ?? '0', 10);
-  if (Number.isFinite(expiresAt) && expiresAt < Date.now()) {
+  const expired = Number.isFinite(expiresAt) && expiresAt > 0 && expiresAt < Date.now();
+  if (expired) {
     sessions.delete(token);
     throw ApiError.http(401);
   }
+  // The mock's session set is in-memory and resets on every app reload, while
+  // clients legitimately keep a persisted token across restarts. Trust any
+  // well-formed, unexpired token and re-register it so bookings keep working.
+  const wellFormed = /^tok\.\d+\.[a-z0-9]+$/i.test(token);
+  if (!sessions.has(token) && !wellFormed) {
+    throw ApiError.http(401);
+  }
+  sessions.add(token);
   void params;
   return { token, expiresAt };
 }
@@ -485,7 +494,7 @@ function handleRemoteConfig(): MockResponse {
     body: {
       flags: {
         'shop.checkout_v2': true,
-        'consultation.video_enabled': false,
+        'consultation.video_enabled': true,
         'health.timeline_redesign': chaosEnabled ? chaosRoll() > 0.5 : true,
         'sync.background_enabled': true,
       },

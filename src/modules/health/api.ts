@@ -1,5 +1,8 @@
 import { api } from '@/core/api/client';
+import { toPaginated } from '@/core/api/paginate';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
+import type { ComponentProps } from 'react';
 import type { HealthRecord, RecordSearchParams } from './types';
 import type { Paginated, QueryParams } from '@/types';
 
@@ -15,8 +18,9 @@ export function toRecordQueryParams(params: RecordSearchParams & { page?: number
 }
 
 export const healthApi = {
-  listRecords(params: RecordSearchParams & { page?: number; pageSize?: number }): Promise<Paginated<HealthRecord>> {
-    return api.get<Paginated<HealthRecord>>('/records', toRecordQueryParams(params), { cacheTtlMs: 5 * 60 * 1000 });
+  async listRecords(params: RecordSearchParams & { page?: number; pageSize?: number }): Promise<Paginated<HealthRecord>> {
+    const raw = await api.get<unknown>('/records', toRecordQueryParams(params), { cacheTtlMs: 5 * 60 * 1000 });
+    return toPaginated<HealthRecord>(raw, { page: params.page, pageSize: params.pageSize });
   },
 
   getRecord(id: string): Promise<HealthRecord> {
@@ -43,10 +47,10 @@ export const RECORD_TYPE_TONE: Record<HealthRecord['type'], 'info' | 'success' |
   allergy: 'danger',
 };
 
-export const RECORD_TYPE_ICON: Record<HealthRecord['type'], string> = {
-  lab_report: '🧪',
-  prescription: '💊',
-  consultation: '🩺',
-  vaccination: '💉',
-  allergy: '⚠️',
+export const RECORD_TYPE_ICON: Record<HealthRecord['type'], ComponentProps<typeof Ionicons>['name']> = {
+  lab_report: 'flask',
+  prescription: 'medkit',
+  consultation: 'pulse',
+  vaccination: 'bandage',
+  allergy: 'warning',
 };

@@ -1,13 +1,17 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { Pressable, SectionList, StyleSheet, Text, View } from 'react-native';
+import { SectionList, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FadeInDownView } from '@/components/ui/FadeInDownView';
 
 import { Chip } from '@/components/ui/Chip';
+import { DoctorPulseBadge } from '@/components/ui/DoctorPulseBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { FilterSheet, type FilterGroup } from '@/components/ui/FilterSheet';
 import { ListFooter } from '@/components/ui/ListFooter';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -48,9 +52,12 @@ export function TimelineScreen({ navigation }: Props) {
   );
 
   const renderRecord = useCallback(
-    ({ item }: { item: HealthRecord }) => <RecordCard record={item} onPress={openRecord} />,
+    ({ item, index }: { item: HealthRecord; index: number }) => (
+      <RecordCard record={item} index={index} onPress={openRecord} />
+    ),
     [openRecord],
   );
+
 
   const renderSectionHeader = useCallback(
     ({ section }: { section: { title: string; data: HealthRecord[] } }) => {
@@ -107,13 +114,64 @@ export function TimelineScreen({ navigation }: Props) {
   );
 
   const header = (
-    <View style={styles.header}>
+    <FadeInDownView duration={400} style={styles.header}>
       <OfflineBanner />
-      <Text style={[styles.title, { color: theme.colors.text }]} accessibilityRole="header">
-        {t('health.title')}
-      </Text>
-      <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>{t('health.subtitle')}</Text>
-      <SearchBar value={list.query} onChangeText={list.setQuery} placeholder={`${t('common.search')} records…`} />
+
+      {/* Clinical Patient Chart & Vitals Card */}
+      <View
+        style={[
+          styles.vitalsHeroCard,
+          { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border },
+          theme.shadows.card,
+        ]}
+      >
+        <View style={styles.vitalsHeroTop}>
+          <View style={[styles.vitalsIconWrap, { backgroundColor: theme.colors.primaryMuted }]}>
+            <Ionicons name="pulse" size={22} color={theme.colors.primary} />
+          </View>
+          <View style={styles.vitalsTitleCol}>
+            <Text style={[styles.vitalsTitle, { color: theme.colors.text }]}>Patient Health Chart</Text>
+            <Text style={[styles.vitalsSubtitle, { color: theme.colors.textMuted }]}>
+              Encrypted Medical Records & Ayurvedic Diagnostics
+            </Text>
+          </View>
+        </View>
+
+        <View style={[styles.vitalsGrid, { backgroundColor: theme.colors.borderLight }]}>
+          <View style={styles.vitalItem}>
+            <View style={styles.vitalItemHeader}>
+              <Ionicons name="heart" size={13} color={theme.colors.danger} />
+              <Text style={[styles.vitalLabel, { color: theme.colors.textMuted }]}>Cardiac Pulse</Text>
+            </View>
+            <Text style={[styles.vitalValue, { color: theme.colors.text }]}>72 bpm</Text>
+            <DoctorPulseBadge label="Normal" isOnline size="sm" />
+          </View>
+
+          <View style={[styles.vitalDivider, { backgroundColor: theme.colors.border }]} />
+
+          <View style={styles.vitalItem}>
+            <View style={styles.vitalItemHeader}>
+              <Ionicons name="leaf" size={13} color={theme.colors.herbGold} />
+              <Text style={[styles.vitalLabel, { color: theme.colors.textMuted }]}>Ayurveda Dosha</Text>
+            </View>
+            <Text style={[styles.vitalValue, { color: theme.colors.text }]}>Pitta-Kapha</Text>
+            <Text style={[styles.vitalSub, { color: theme.colors.primary }]}>Equilibrium</Text>
+          </View>
+
+          <View style={[styles.vitalDivider, { backgroundColor: theme.colors.border }]} />
+
+          <View style={styles.vitalItem}>
+            <View style={styles.vitalItemHeader}>
+              <Ionicons name="document-text" size={13} color={theme.colors.accent} />
+              <Text style={[styles.vitalLabel, { color: theme.colors.textMuted }]}>Total Records</Text>
+            </View>
+            <Text style={[styles.vitalValue, { color: theme.colors.text }]}>{list.total}</Text>
+            <Text style={[styles.vitalSub, { color: theme.colors.textMuted }]}>Verified</Text>
+          </View>
+        </View>
+      </View>
+
+      <SearchBar value={list.query} onChangeText={list.setQuery} placeholder={`${t('common.search')} prescriptions, reports…`} />
       <View style={styles.controlsRow}>
         <Chip
           label={activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filters'}
@@ -135,7 +193,7 @@ export function TimelineScreen({ navigation }: Props) {
         </View>
       </View>
       <Text style={[styles.count, { color: theme.colors.textMuted }]}>{t('common.results', { count: list.total })}</Text>
-    </View>
+    </FadeInDownView>
   );
 
   const ListEmptyComponent = (() => {
@@ -185,7 +243,7 @@ export function TimelineScreen({ navigation }: Props) {
         accessibilityLabel="Health records timeline"
       />
 
-      {/* Floating add button */}
+      {/* Floating animated add record button */}
       <PressableAddButton onPress={() => navigation.navigate('AddRecord')} bottom={insets.bottom + 80} />
 
       <FilterSheet
@@ -205,24 +263,91 @@ function PressableAddButton({ onPress, bottom }: { onPress: () => void; bottom: 
   const theme = useTheme();
   const { t } = useTranslation();
   return (
-    <Pressable
+    <PressableScale
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={t('health.addRecord')}
-      style={({ pressed }) => [
+      activeScale={0.9}
+      style={[
         styles.fab,
-        { backgroundColor: theme.colors.primary, bottom, opacity: pressed ? 0.85 : 1 },
+        { backgroundColor: theme.colors.primary, bottom },
+        theme.shadows.floating,
       ]}
     >
-      <Text style={{ color: theme.colors.onPrimary, fontSize: 26, fontWeight: '700', marginTop: -2 }}>+</Text>
-    </Pressable>
+      <Ionicons name="add" size={30} color={theme.colors.onPrimary} />
+    </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingBottom: 32 },
-  header: { gap: 10, paddingBottom: 12 },
+  header: { gap: 12, paddingBottom: 14 },
+  vitalsHeroCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 14,
+  },
+  vitalsHeroTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  vitalsIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  vitalsTitleCol: {
+    flex: 1,
+    gap: 2,
+  },
+  vitalsTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  vitalsSubtitle: {
+    fontSize: 12,
+  },
+  vitalsGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  vitalItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 3,
+  },
+  vitalItemHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  vitalDivider: {
+    width: 1,
+    height: 34,
+  },
+  vitalLabel: {
+    fontSize: 10.5,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+  },
+  vitalValue: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  vitalSub: {
+    fontSize: 10.5,
+    fontWeight: '600',
+  },
   title: { fontSize: 26, fontWeight: '800' },
   subtitle: { fontSize: 13, marginTop: -6 },
   controlsRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -242,15 +367,11 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
   },
 });
+

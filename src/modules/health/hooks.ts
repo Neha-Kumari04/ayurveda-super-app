@@ -33,7 +33,7 @@ export function useHealthTimeline() {
     placeholderData: (previousData) => previousData,
   });
 
-  const records = useMemo(() => query.data?.pages.flatMap((page) => page.items) ?? [], [query.data]);
+  const records = useMemo(() => query.data?.pages.flatMap((page) => page?.items ?? []) ?? [], [query.data]);
 
   const setQuery = useCallback((q: string) => setState((s) => ({ ...s, query: q })), []);
   const setGroupBy = useCallback((groupBy: TimelineGroupBy) => setState((s) => ({ ...s, groupBy })), []);

@@ -3,7 +3,7 @@ import { useColorScheme } from 'react-native';
 
 import { useSettingsStore } from '@/store/settingsStore';
 
-import { darkColors, lightColors, radius, spacing, typography } from './tokens';
+import { darkColors, lightColors, radius, shadows, spacing, typography } from './tokens';
 
 import type { ThemeColors } from './tokens';
 
@@ -12,6 +12,7 @@ export interface Theme {
   spacing: typeof spacing;
   radius: typeof radius;
   typography: typeof typography;
+  shadows: typeof shadows;
   scheme: 'light' | 'dark';
 }
 
@@ -28,6 +29,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       spacing,
       radius,
       typography,
+      shadows,
       scheme,
     };
   }, [mode, systemScheme]);

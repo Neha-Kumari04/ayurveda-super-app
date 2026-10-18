@@ -5,7 +5,8 @@ import App from '../../App';
 
 /**
  * Full user journey through the real app tree:
- * sign in → open shop → open product → add to cart → cart → checkout → place order.
+ * sign in → complete profile gate → open shop → open product → add to cart →
+ * cart → checkout → place order.
  */
 describe('checkout flow (e2e)', () => {
   it('completes sign-in to order placement', async () => {
@@ -13,8 +14,17 @@ describe('checkout flow (e2e)', () => {
     await render(<App />);
 
     // --- Authentication ---
-    await waitFor(() => expect(screen.getByText('Ayurveda Super App')).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy());
     await user.press(screen.getByRole('button', { name: 'Sign in' }));
+
+    // --- Profile gate: identity details are required before using the app ---
+    await waitFor(() => expect(screen.getByText('Complete your profile')).toBeTruthy());
+    await user.type(screen.getByLabelText('Full name'), 'Asha Sharma');
+    await user.type(screen.getByLabelText('Mobile number'), '9876543210');
+    await user.type(screen.getByLabelText('Age'), '32');
+    await user.press(screen.getByRole('tab', { name: 'Female' }));
+    await user.press(screen.getByRole('button', { name: 'Save & continue' }));
+    await waitFor(() => expect(screen.queryByText('Complete your profile')).toBeNull());
 
     // Main tabs appear once the session is established.
     await waitFor(() => expect(screen.getByText('Consult')).toBeTruthy());
@@ -40,15 +50,13 @@ describe('checkout flow (e2e)', () => {
     await user.press(screen.getByRole('button', { name: 'Checkout' }));
     await waitFor(() => expect(screen.getByRole('button', { name: /Checkout · \d+ items/ })).toBeTruthy());
 
-    // --- Cart → checkout form ---
+    // --- Cart → checkout form (name + mobile prefilled from the profile) ---
     await user.press(screen.getByRole('button', { name: /Checkout · \d+ items/ }));
     await waitFor(() => expect(screen.getByText('Delivery address')).toBeTruthy());
 
-    await user.type(screen.getByLabelText('Full name'), 'Asha Sharma');
     await user.type(screen.getByLabelText('Address'), 'Flat 12, MG Road');
     await user.type(screen.getByLabelText('City'), 'Pune');
-    await user.type(screen.getByLabelText('Pincode'), '411001');
-    await user.type(screen.getByLabelText('Phone'), '9876543210');
+    await user.type(screen.getByLabelText('PIN code'), '411001');
 
     const placeOrder = screen.getByRole('button', { name: /^Place order/ });
     await user.press(placeOrder);

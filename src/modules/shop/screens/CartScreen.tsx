@@ -2,10 +2,12 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { FadeInDownView } from '@/components/ui/FadeInDownView';
 import { Input } from '@/components/ui/Input';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { useToast } from '@/components/toast/ToastProvider';
@@ -72,11 +74,23 @@ export function CartScreen({ navigation }: Props) {
   const keyExtractor = useCallback((item: ReturnType<typeof buildCartLines>[number]) => item.product.id, []);
 
   const header = (
-    <View style={styles.header}>
+    <FadeInDownView duration={350} style={styles.header}>
       <OfflineBanner />
-      <Text style={[styles.title, { color: theme.colors.text }]} accessibilityRole="header">
-        {t('shop.cart')}
-      </Text>
+      <View style={styles.titleRow}>
+        <View style={styles.titleWrap}>
+          <Text style={[styles.title, { color: theme.colors.text }]} accessibilityRole="header">
+            {t('shop.cart')}
+          </Text>
+          <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>
+            Ayurvedic Dispensary Checkout
+          </Text>
+        </View>
+        <View style={[styles.trustBadge, { backgroundColor: theme.colors.primaryMuted }]}>
+          <Ionicons name="shield-checkmark" size={14} color={theme.colors.primary} />
+          <Text style={[styles.trustBadgeText, { color: theme.colors.primary }]}>Ayush Verified</Text>
+        </View>
+      </View>
+
       {couponCode ? <Chip label={couponLabel(couponCode)} selected onRemove={() => setCoupon(null)} /> : null}
       {!couponCode ? (
         <View style={styles.couponRow}>
@@ -91,28 +105,36 @@ export function CartScreen({ navigation }: Props) {
           <Button label={t('common.apply')} variant="secondary" onPress={onApplyCoupon} />
         </View>
       ) : null}
-    </View>
+    </FadeInDownView>
   );
 
   const footer = lines.length > 0 ? (
-    <Card style={styles.summaryCard}>
-      <Row label={t('shop.subtotal')} value={formatCurrency(summary.subtotal)} />
-      {summary.discount > 0 ? (
-        <Row label={`${t('shop.discount')} (${couponCode})`} value={`− ${formatCurrency(summary.discount)}`} positive />
-      ) : null}
-      <Row
-        label={t('shop.delivery')}
-        value={summary.deliveryFee === 0 ? 'FREE' : formatCurrency(summary.deliveryFee)}
-        positive={summary.deliveryFee === 0}
-      />
-      <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-      <Row label={t('shop.total')} value={formatCurrency(summary.total)} bold />
-      <Button
-        label={`${t('shop.checkout')} · ${summary.itemCount} items`}
-        onPress={() => navigation.navigate('Checkout')}
-        fullWidth
-      />
-    </Card>
+    <FadeInDownView delay={150} duration={400}>
+      <Card style={[styles.summaryCard, { borderColor: theme.colors.border }]}>
+        <View style={styles.summaryTitleRow}>
+          <Ionicons name="receipt-outline" size={16} color={theme.colors.primary} />
+          <Text style={[styles.summaryTitle, { color: theme.colors.text }]}>Order Summary</Text>
+        </View>
+        <Row label={t('shop.subtotal')} value={formatCurrency(summary.subtotal)} />
+        {summary.discount > 0 ? (
+          <Row label={`${t('shop.discount')} (${couponCode})`} value={`− ${formatCurrency(summary.discount)}`} positive />
+        ) : null}
+        <Row
+          label={t('shop.delivery')}
+          value={summary.deliveryFee === 0 ? 'FREE' : formatCurrency(summary.deliveryFee)}
+          positive={summary.deliveryFee === 0}
+        />
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+        <Row label={t('shop.total')} value={formatCurrency(summary.total)} bold />
+        <Button
+          label={`${t('shop.checkout')} · ${summary.itemCount} items`}
+          onPress={() => navigation.navigate('Checkout')}
+          fullWidth
+          variant="primary"
+          style={styles.checkoutBtn}
+        />
+      </Card>
+    </FadeInDownView>
   ) : null;
 
   return (
@@ -167,7 +189,22 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontWeight: '800' },
   couponRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
   couponInput: { flex: 1 },
-  summaryCard: { marginTop: 8, gap: 8 },
+  summaryCard: { marginTop: 8, gap: 10 },
+  summaryTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  summaryTitle: { fontSize: 15, fontWeight: '700' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  divider: { height: StyleSheet.hairlineWidth, marginVertical: 2 },
+  divider: { height: StyleSheet.hairlineWidth, marginVertical: 4 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  titleWrap: { flex: 1 },
+  subtitle: { fontSize: 13, marginTop: 2 },
+  trustBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  trustBadgeText: { fontSize: 11, fontWeight: '700' },
+  checkoutBtn: { marginTop: 4 },
 });

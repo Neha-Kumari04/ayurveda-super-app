@@ -29,7 +29,19 @@
       "expo-secure-store",
       "expo-local-authentication",
       "expo-localization",
-      "expo-font"
+      "expo-font",
+      "expo-speech-recognition",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#E6F4FE",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain"
+        }
+      ],
+      "expo-camera",
+      "expo-asset"
     ]
   }
 }

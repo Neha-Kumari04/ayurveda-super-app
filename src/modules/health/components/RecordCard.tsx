@@ -1,8 +1,9 @@
 import React, { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { AnimatedCard } from '@/components/ui/AnimatedCard';
 import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
 import { Chip } from '@/components/ui/Chip';
 import { useTranslation } from '@/i18n';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -16,9 +17,10 @@ import type { HealthRecord } from '../types';
 export interface RecordCardProps {
   record: HealthRecord;
   onPress: (record: HealthRecord) => void;
+  index?: number;
 }
 
-export const RecordCard = memo(function ({ record, onPress }: RecordCardProps) {
+export const RecordCard = memo(function ({ record, onPress, index = 0 }: RecordCardProps) {
   const theme = useTheme();
   const { t } = useTranslation();
 
@@ -29,13 +31,27 @@ export const RecordCard = memo(function ({ record, onPress }: RecordCardProps) {
         ? theme.colors.successMuted
         : record.type === 'lab_report' || record.type === 'vaccination'
           ? theme.colors.infoMuted
-          : theme.colors.skeleton;
+          : theme.colors.primaryMuted;
+
+  const iconColor =
+    record.type === 'allergy'
+      ? theme.colors.danger
+      : record.type === 'prescription'
+        ? theme.colors.success
+        : record.type === 'lab_report' || record.type === 'vaccination'
+          ? theme.colors.info
+          : theme.colors.primary;
 
   return (
-    <Card onPress={() => onPress(record)} style={styles.card} accessibilityLabel={`${record.type}: ${record.title}`}>
+    <AnimatedCard
+      index={index}
+      onPress={() => onPress(record)}
+      style={styles.card}
+      accessibilityLabel={`${record.type}: ${record.title}`}
+    >
       <View style={styles.header}>
         <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
-          <Text style={styles.icon}>{RECORD_TYPE_ICON[record.type]}</Text>
+          <Ionicons name={RECORD_TYPE_ICON[record.type]} size={20} color={iconColor} />
         </View>
         <View style={styles.headerInfo}>
           <View style={styles.titleRow}>
@@ -69,15 +85,15 @@ export const RecordCard = memo(function ({ record, onPress }: RecordCardProps) {
       {record.attachments.length > 0 ? (
         <AttachmentPreview attachments={record.attachments} />
       ) : null}
-    </Card>
+    </AnimatedCard>
   );
 });
+
 
 const styles = StyleSheet.create({
   card: { marginBottom: 10, gap: 8 },
   header: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   iconWrap: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  icon: { fontSize: 18 },
   headerInfo: { flex: 1, gap: 2 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   title: { fontSize: 15, fontWeight: '700', flexShrink: 1 },

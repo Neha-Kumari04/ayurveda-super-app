@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { FadeInDownView } from '@/components/ui/FadeInDownView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { DoctorPulseBadge } from '@/components/ui/DoctorPulseBadge';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { useToast } from '@/components/toast/ToastProvider';
 import { useBiometric } from '@/core/hooks/useBiometric';
@@ -61,105 +64,145 @@ export function SettingsScreen(_props: Props) {
         {t('settings.title')}
       </Text>
 
-      <Card style={styles.card}>
-        <View style={styles.profileRow}>
-          <View style={[styles.avatar, { backgroundColor: theme.colors.primaryMuted }]}>
-            <Text style={{ color: theme.colors.primary, fontWeight: '800', fontSize: 18 }}>
-              {user?.name?.charAt(0) ?? '?'}
-            </Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={[styles.name, { color: theme.colors.text }]}>{user?.name ?? 'Guest'}</Text>
-            <Text style={[styles.email, { color: theme.colors.textMuted }]}>{user?.email}</Text>
-          </View>
-        </View>
-      </Card>
-
-      <Card style={styles.card}>
-        <Text style={[styles.section, { color: theme.colors.text }]}>{t('settings.appearance')}</Text>
-        <Text style={[styles.label, { color: theme.colors.textSecondary }]}>{t('settings.theme')}</Text>
-        <SegmentedControl
-          options={[
-            { value: 'light', label: t('settings.themeLight') },
-            { value: 'dark', label: t('settings.themeDark') },
-            { value: 'system', label: t('settings.themeSystem') },
-          ]}
-          value={themeMode}
-          onChange={(value: ThemeMode) => setThemeMode(value)}
-          accessibilityLabel={t('settings.theme')}
-        />
-        <Text style={[styles.label, { color: theme.colors.textSecondary }]}>{t('settings.language')}</Text>
-        <SegmentedControl
-          options={[
-            { value: 'en', label: 'English' },
-            { value: 'hi', label: 'हिन्दी' },
-          ]}
-          value={locale}
-          onChange={(value: Locale) => setLocale(value)}
-          accessibilityLabel={t('settings.language')}
-        />
-      </Card>
-
-      <Card style={styles.card}>
-        <Text style={[styles.section, { color: theme.colors.text }]}>{t('settings.security')}</Text>
-        <View style={styles.switchRow}>
-          <View style={styles.switchInfo}>
-            <Text style={[styles.switchLabel, { color: theme.colors.text }]}>{t('settings.biometric')}</Text>
-            <Text style={[styles.hint, { color: theme.colors.textMuted }]}>
-              {biometric.isAvailable && biometric.isEnrolled
-                ? 'Require biometrics to unlock the app'
-                : 'No biometrics enrolled on this device'}
-            </Text>
-          </View>
-          <Switch
-            value={biometricLocked}
-            onValueChange={(value) => setBiometricLocked(value)}
-            disabled={!biometric.isAvailable || !biometric.isEnrolled}
-            trackColor={{ true: theme.colors.primary }}
-            accessibilityLabel={t('settings.biometric')}
-          />
-        </View>
-      </Card>
-
-      <Card style={styles.card}>
-        <Text style={[styles.section, { color: theme.colors.text }]}>{t('settings.syncQueue')}</Text>
-        <View style={styles.syncRow}>
-          <Text style={{ color: theme.colors.textSecondary, fontSize: 14 }}>
-            {pendingOps} operation{pendingOps === 1 ? '' : 's'} waiting to sync
-          </Text>
-          {pendingOps > 0 ? <Badge label="Queued" tone="warning" size="sm" /> : <Badge label="Idle" tone="success" size="sm" />}
-        </View>
-        <Text style={[styles.hint, { color: theme.colors.textMuted }]}>
-          Offline bookings and records upload automatically when you reconnect.
-        </Text>
-      </Card>
-
-      <Card style={styles.card}>
-        <Text style={[styles.section, { color: theme.colors.text }]}>{t('settings.featureFlags')}</Text>
-        {Object.keys(flags).length === 0 ? (
-          <Text style={[styles.hint, { color: theme.colors.textMuted }]}>
-            Flags load from remote config on launch (or use local env fallbacks).
-          </Text>
-        ) : (
-          Object.entries(flags).map(([flag, enabled]) => (
-            <View key={flag} style={styles.flagRow}>
-              <Text style={[styles.flagName, { color: theme.colors.textSecondary }]} numberOfLines={1}>
-                {flag}
+      {/* Clinical Patient / Doctor Identity Card */}
+      <FadeInDownView duration={350}>
+        <Card style={styles.card} elevated>
+          <View style={styles.profileRow}>
+            <View style={[styles.avatar, { backgroundColor: theme.colors.primaryMuted }]}>
+              <Text style={{ color: theme.colors.primary, fontWeight: '800', fontSize: 20 }}>
+                {user?.name?.charAt(0) ?? 'A'}
               </Text>
-              <Badge label={enabled ? 'enabled' : 'disabled'} tone={enabled ? 'success' : 'neutral'} size="sm" />
+              <View style={[styles.avatarStatusDot, { backgroundColor: theme.colors.pulseLive }]} />
             </View>
-          ))
-        )}
-        <Button label="Refresh remote config" variant="ghost" size="sm" onPress={() => void fetchRemoteConfig()} />
-      </Card>
+            <View style={styles.profileInfo}>
+              <View style={styles.profileNameRow}>
+                <Text style={[styles.name, { color: theme.colors.text }]}>{user?.name ?? 'Dr. Asha Vaidya'}</Text>
+                <View style={[styles.roleBadge, { backgroundColor: theme.colors.primaryMuted }]}>
+                  <Text style={[styles.roleText, { color: theme.colors.primary }]}>Active</Text>
+                </View>
+              </View>
+              <Text style={[styles.email, { color: theme.colors.textMuted }]}>{user?.email}</Text>
+              <DoctorPulseBadge label="Identity Verified · HIPAA Sec" isOnline size="sm" />
+            </View>
+          </View>
+        </Card>
+      </FadeInDownView>
 
-      <Card style={styles.card}>
-        <Text style={[styles.section, { color: theme.colors.text }]}>{t('settings.about')}</Text>
-        <Text style={[styles.hint, { color: theme.colors.textMuted }]}>
-          {t('settings.version')} 1.0.0 · Architecture demo with offline-first sync.
-        </Text>
-        <Button label="Sign out" variant="danger" onPress={() => void onSignOut()} />
-      </Card>
+      {/* Appearance Section */}
+      <FadeInDownView delay={100} duration={400}>
+        <Card style={styles.card}>
+          <View style={styles.sectionHeaderRow}>
+            <Ionicons name="color-palette-outline" size={18} color={theme.colors.primary} />
+            <Text style={[styles.section, { color: theme.colors.text }]}>{t('settings.appearance')}</Text>
+          </View>
+          <Text style={[styles.label, { color: theme.colors.textSecondary }]}>{t('settings.theme')}</Text>
+          <SegmentedControl
+            options={[
+              { value: 'light', label: t('settings.themeLight') },
+              { value: 'dark', label: t('settings.themeDark') },
+              { value: 'system', label: t('settings.themeSystem') },
+            ]}
+            value={themeMode}
+            onChange={(value: ThemeMode) => setThemeMode(value)}
+            accessibilityLabel={t('settings.theme')}
+          />
+          <Text style={[styles.label, { color: theme.colors.textSecondary }]}>{t('settings.language')}</Text>
+          <SegmentedControl
+            options={[
+              { value: 'en', label: 'English' },
+              { value: 'hi', label: 'हिन्दी' },
+            ]}
+            value={locale}
+            onChange={(value: Locale) => setLocale(value)}
+            accessibilityLabel={t('settings.language')}
+          />
+        </Card>
+      </FadeInDownView>
+
+      {/* Security Section */}
+      <FadeInDownView delay={180} duration={400}>
+        <Card style={styles.card}>
+          <View style={styles.sectionHeaderRow}>
+            <Ionicons name="shield-checkmark-outline" size={18} color={theme.colors.primary} />
+            <Text style={[styles.section, { color: theme.colors.text }]}>{t('settings.security')}</Text>
+          </View>
+          <View style={styles.switchRow}>
+            <View style={styles.switchInfo}>
+              <Text style={[styles.switchLabel, { color: theme.colors.text }]}>{t('settings.biometric')}</Text>
+              <Text style={[styles.hint, { color: theme.colors.textMuted }]}>
+                {biometric.isAvailable && biometric.isEnrolled
+                  ? 'Require biometrics to unlock the app'
+                  : 'No biometrics enrolled on this device'}
+              </Text>
+            </View>
+            <Switch
+              value={biometricLocked}
+              onValueChange={(value) => setBiometricLocked(value)}
+              disabled={!biometric.isAvailable || !biometric.isEnrolled}
+              trackColor={{ true: theme.colors.primary }}
+              accessibilityLabel={t('settings.biometric')}
+            />
+          </View>
+        </Card>
+      </FadeInDownView>
+
+      {/* Sync Queue Section */}
+      <FadeInDownView delay={240} duration={400}>
+        <Card style={styles.card}>
+          <View style={styles.sectionHeaderRow}>
+            <Ionicons name="cloud-done-outline" size={18} color={theme.colors.primary} />
+            <Text style={[styles.section, { color: theme.colors.text }]}>{t('settings.syncQueue')}</Text>
+          </View>
+          <View style={styles.syncRow}>
+            <Text style={{ color: theme.colors.textSecondary, fontSize: 14 }}>
+              {pendingOps} operation{pendingOps === 1 ? '' : 's'} waiting to sync
+            </Text>
+            {pendingOps > 0 ? <Badge label="Queued" tone="warning" size="sm" /> : <Badge label="Synchronized" tone="success" size="sm" />}
+          </View>
+          <Text style={[styles.hint, { color: theme.colors.textMuted }]}>
+            Offline bookings and records upload automatically when you reconnect.
+          </Text>
+        </Card>
+      </FadeInDownView>
+
+      {/* Diagnostics / Remote Config */}
+      <FadeInDownView delay={300} duration={400}>
+        <Card style={styles.card}>
+          <View style={styles.sectionHeaderRow}>
+            <Ionicons name="options-outline" size={18} color={theme.colors.primary} />
+            <Text style={[styles.section, { color: theme.colors.text }]}>{t('settings.featureFlags')}</Text>
+          </View>
+          {Object.keys(flags).length === 0 ? (
+            <Text style={[styles.hint, { color: theme.colors.textMuted }]}>
+              Flags load from remote config on launch (or use local env fallbacks).
+            </Text>
+          ) : (
+            Object.entries(flags).map(([flag, enabled]) => (
+              <View key={flag} style={styles.flagRow}>
+                <Text style={[styles.flagName, { color: theme.colors.textSecondary }]} numberOfLines={1}>
+                  {flag}
+                </Text>
+                <Badge label={enabled ? 'enabled' : 'disabled'} tone={enabled ? 'success' : 'neutral'} size="sm" />
+              </View>
+            ))
+          )}
+          <Button label="Refresh remote config" variant="ghost" size="sm" onPress={() => void fetchRemoteConfig()} />
+        </Card>
+      </FadeInDownView>
+
+      {/* About Section & Sign Out */}
+      <FadeInDownView delay={360} duration={400}>
+        <Card style={styles.card}>
+          <View style={styles.sectionHeaderRow}>
+            <Ionicons name="information-circle-outline" size={18} color={theme.colors.primary} />
+            <Text style={[styles.section, { color: theme.colors.text }]}>{t('settings.about')}</Text>
+          </View>
+          <Text style={[styles.hint, { color: theme.colors.textMuted }]}>
+            {t('settings.version')} 1.0.0 · Clinical Telehealth & Ayurveda Super App.
+          </Text>
+          <Button label="Sign Out" variant="danger" onPress={() => void onSignOut()} />
+        </Card>
+      </FadeInDownView>
     </ScrollView>
   );
 }
@@ -173,10 +216,15 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '600' },
   hint: { fontSize: 12.5, lineHeight: 17 },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  profileInfo: { flex: 1, gap: 2 },
+  avatar: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  avatarStatusDot: { position: 'absolute', bottom: 0, right: 0, width: 12, height: 12, borderRadius: 6, borderWidth: 2, borderColor: '#FFFFFF' },
+  profileInfo: { flex: 1, gap: 4 },
+  profileNameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  roleBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  roleText: { fontSize: 11, fontWeight: '700' },
   name: { fontSize: 16, fontWeight: '700' },
   email: { fontSize: 13 },
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
   switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   switchInfo: { flex: 1, gap: 2 },
   switchLabel: { fontSize: 14.5, fontWeight: '600' },

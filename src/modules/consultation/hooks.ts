@@ -40,7 +40,7 @@ export function useDoctorList() {
     placeholderData: (previousData) => previousData,
   });
 
-  const doctors = useMemo(() => query.data?.pages.flatMap((page) => page.items) ?? [], [query.data]);
+  const doctors = useMemo(() => query.data?.pages.flatMap((page) => page?.items ?? []) ?? [], [query.data]);
 
   const setQuery = useCallback((q: string) => setState((s) => ({ ...s, query: q })), []);
   const setSort = useCallback((sort: SortOption) => setState((s) => ({ ...s, sort })), []);

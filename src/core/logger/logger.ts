@@ -27,6 +27,8 @@ class NoopCrashReporter implements CrashReporter {
 }
 
 let crashReporter: CrashReporter = new NoopCrashReporter();
+/** True while the crash reporter is running — prevents logger ↔ reporter loops. */
+let isReporting = false;
 
 export function setCrashReporter(reporter: CrashReporter): void {
   crashReporter = reporter;
@@ -57,8 +59,18 @@ function emit(level: LogLevel, message: string, context?: LogContext): void {
     method(`[${level}] ${message}`, context ?? '');
   }
 
-  if (level === 'error' && context?.error instanceof Error) {
-    crashReporter.captureException(context.error, context);
+  if (level === 'error' && context?.error instanceof Error && !isReporting) {
+    // Re-entrancy guard: a CrashReporter that logs through this same logger
+    // (e.g. the console reporter) would otherwise recurse until the JS stack
+    // overflows ("Maximum call stack size exceeded").
+    isReporting = true;
+    try {
+      crashReporter.captureException(context.error, context);
+    } catch (reporterError) {
+      if (__DEV__) console.warn('[crash] reporter failed', reporterError);
+    } finally {
+      isReporting = false;
+    }
   }
 }
 

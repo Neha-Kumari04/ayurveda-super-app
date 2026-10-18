@@ -1,9 +1,12 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FadeInDownView } from '@/components/ui/FadeInDownView';
 
 import { Badge } from '@/components/ui/Badge';
 import { Chip } from '@/components/ui/Chip';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { FilterSheet, type FilterGroup } from '@/components/ui/FilterSheet';
@@ -12,6 +15,11 @@ import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { RecommendationRail } from '@/components/ai/RecommendationRail';
+import { VoiceSearchButton } from '@/components/ai/VoiceSearchButton';
+import { useVoiceSearch } from '@/core/ai/voice/useVoiceSearch';
+import { useProductRecommendations } from '@/core/ai/recs/useRecommendations';
+import { useInteractionStore } from '@/core/ai/recs/interactions';
 import { useTranslation } from '@/i18n';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -51,6 +59,17 @@ export function ProductListScreen({ navigation }: Props) {
   const cartCount = useCartStore(selectCartCount);
   const wishlist = useCartStore((s) => s.wishlist);
   const toggleWishlist = useCartStore((s) => s.toggleWishlist);
+  const voice = useVoiceSearch();
+  const recs = useProductRecommendations();
+  const trackSearch = useInteractionStore((s) => s.trackSearch);
+
+  const handleVoiceResult = useCallback(
+    (text: string) => {
+      list.setQuery(text);
+      trackSearch(text);
+    },
+    [list, trackSearch],
+  );
 
   const activeFilterCount =
     (list.filters.categories?.length ?? 0) +
@@ -61,7 +80,10 @@ export function ProductListScreen({ navigation }: Props) {
     (list.filters.inStockOnly ? 1 : 0);
 
   const openProduct = useCallback(
-    (product: Product) => navigation.navigate('ProductDetail', { productId: product.id }),
+    (product: Product) => {
+      useInteractionStore.getState().trackProductView(product.id, product.category, product.tags);
+      navigation.navigate('ProductDetail', { productId: product.id });
+    },
     [navigation],
   );
 
@@ -144,19 +166,129 @@ export function ProductListScreen({ navigation }: Props) {
   );
 
   const header = (
-    <View style={styles.header}>
+    <FadeInDownView duration={400} style={styles.header}>
       <OfflineBanner />
-      <View style={styles.titleRow}>
-        <View style={styles.titleCol}>
-          <Text style={[styles.title, { color: theme.colors.text }]} accessibilityRole="header">
-            {t('shop.title')}
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.colors.textMuted }]}>{t('shop.subtitle')}</Text>
+
+      {/* Ayurvedic Pharmacy / Dispensary Hero Card */}
+      <View
+        style={[
+          styles.dispensaryHeroCard,
+          { backgroundColor: theme.colors.surfaceElevated, borderColor: theme.colors.border },
+          theme.shadows.card,
+        ]}
+      >
+        <View style={styles.dispensaryTop}>
+          <View style={[styles.dispensaryIconBox, { backgroundColor: theme.colors.primaryMuted }]}>
+            <Ionicons name="leaf" size={22} color={theme.colors.primary} />
+          </View>
+          <View style={styles.dispensaryTitles}>
+            <View style={styles.certifiedTagRow}>
+              <Ionicons name="shield-checkmark" size={13} color={theme.colors.herbGold} />
+              <Text style={[styles.certifiedTag, { color: theme.colors.herbGold }]}>
+                GMP Certified Pharmacy
+              </Text>
+            </View>
+            <Text style={[styles.dispensaryTitle, { color: theme.colors.text }]}>
+              Ayurvedic Dispensary
+            </Text>
+          </View>
+
+          <View style={styles.headerButtonsRow}>
+            <PressableScale
+              onPress={() => navigation.navigate('Wishlist')}
+              style={[styles.headerActionBtn, { backgroundColor: theme.colors.borderLight }]}
+              accessibilityRole="button"
+              accessibilityLabel="Wishlist"
+            >
+              <Ionicons name="heart-outline" size={18} color={theme.colors.text} />
+              {wishlist.length > 0 ? (
+                <View style={[styles.cartBadge, { backgroundColor: theme.colors.danger }]}>
+                  <Text style={styles.cartBadgeText}>{wishlist.length}</Text>
+                </View>
+              ) : null}
+            </PressableScale>
+
+            <PressableScale
+              onPress={() => navigation.navigate('Cart')}
+              style={[styles.cartChipBtn, { backgroundColor: theme.colors.primary }]}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('shop.cart')} (${cartCount})`}
+            >
+              <Ionicons name="cart" size={16} color={theme.colors.onPrimary} />
+              <Text style={styles.cartChipText}>{`${t('shop.cart')} (${cartCount})`}</Text>
+            </PressableScale>
+          </View>
         </View>
-        <Chip label={`${t('shop.wishlist')} (${wishlist.length})`} onPress={() => navigation.navigate('Wishlist')} />
-        <Chip label={`${t('shop.cart')} (${cartCount})`} selected onPress={() => navigation.navigate('Cart')} />
+
+        <Text style={[styles.dispensarySubtitle, { color: theme.colors.textSecondary }]}>
+          {t('shop.subtitle')}
+        </Text>
       </View>
-      <SearchBar value={list.query} onChangeText={list.setQuery} placeholder={`${t('common.search')} products…`} />
+
+      <SearchBar
+        value={voice.isListening || voice.isProcessing ? voice.interimText || list.query : list.query}
+        onChangeText={list.setQuery}
+        placeholder="Search classical herbs, formulations…"
+        rightAccessory={
+          <VoiceSearchButton
+            isListening={voice.isListening}
+            onPress={() => voice.start(handleVoiceResult)}
+            onCancel={voice.cancel}
+          />
+        }
+      />
+
+      {/* Category Pills Rail */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryRail}
+      >
+        {CATEGORIES.map((cat) => {
+          const isSelected = list.filters.categories?.includes(cat);
+          return (
+            <Chip
+              key={cat}
+              label={cat}
+              selected={isSelected}
+              onPress={() => list.toggleInArrayFilter('categories', cat)}
+              size="sm"
+            />
+          );
+        })}
+      </ScrollView>
+
+      {voice.isListening ? (
+        <View style={styles.voiceHintRow}>
+          <Ionicons name="mic" size={13} color={theme.colors.primary} />
+          <Text style={[styles.voiceHint, { color: theme.colors.primary }]}>
+            {voice.interimText || t('ai.voiceListening')}
+          </Text>
+        </View>
+      ) : null}
+      {voice.isProcessing ? (
+        <Text style={[styles.voiceHint, { color: theme.colors.textMuted }]}>{t('ai.voiceProcessing')}</Text>
+      ) : null}
+      {voice.error ? (
+        <Text style={[styles.voiceHint, { color: theme.colors.danger }]}>{voice.error}</Text>
+      ) : null}
+      {/* AI recommendation rails — only shown when no active search */}
+      {list.query.length === 0 && !list.isLoading ? (
+        <>
+          <RecommendationRail
+            title={t('ai.forYou')}
+            subtitle={t('ai.forYouSubtitle')}
+            items={recs.forYou}
+            onSelect={openProduct}
+          />
+          <RecommendationRail
+            title={t('ai.topRated')}
+            subtitle={t('ai.topRatedSubtitle')}
+            items={recs.topRated}
+            onSelect={openProduct}
+          />
+        </>
+      ) : null}
       <View style={styles.controlsRow}>
         <View style={styles.sortWrap}>
           <SegmentedControl
@@ -178,7 +310,7 @@ export function ProductListScreen({ navigation }: Props) {
         </Text>
         {list.isSearching ? <Badge label="Updating…" tone="info" size="sm" /> : null}
       </View>
-    </View>
+    </FadeInDownView>
   );
 
   const ListEmptyComponent = (() => {
@@ -246,7 +378,95 @@ export function ProductListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingBottom: 32 },
-  header: { gap: 10, paddingBottom: 12 },
+  header: { gap: 12, paddingBottom: 14 },
+  dispensaryHeroCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    gap: 10,
+  },
+  dispensaryTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dispensaryIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dispensaryTitles: {
+    flex: 1,
+    gap: 2,
+  },
+  certifiedTagRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  certifiedTag: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+  dispensaryTitle: {
+    fontSize: 17.5,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+  },
+  dispensarySubtitle: {
+    fontSize: 12.5,
+    lineHeight: 17,
+  },
+  headerButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerActionBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  cartChipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  cartChipText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    paddingHorizontal: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  categoryRail: {
+    gap: 8,
+    paddingVertical: 2,
+  },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   titleCol: { flex: 1, minWidth: 140 },
   title: { fontSize: 26, fontWeight: '800' },
@@ -258,4 +478,7 @@ const styles = StyleSheet.create({
   columnWrapper: { gap: 10 },
   gridCell: { flex: 1, marginBottom: 10 },
   loadingGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  voiceHintRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16 },
+  voiceHint: { fontSize: 12, fontWeight: '600' },
 });
+

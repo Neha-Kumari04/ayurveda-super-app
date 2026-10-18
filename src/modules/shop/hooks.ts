@@ -37,7 +37,7 @@ export function useProductList() {
     placeholderData: (previousData) => previousData,
   });
 
-  const products = useMemo(() => query.data?.pages.flatMap((page) => page.items) ?? [], [query.data]);
+  const products = useMemo(() => query.data?.pages.flatMap((page) => page?.items ?? []) ?? [], [query.data]);
 
   const setQuery = useCallback((q: string) => setState((s) => ({ ...s, query: q })), []);
   const setSort = useCallback((sort: ProductSortOption) => setState((s) => ({ ...s, sort })), []);

@@ -1,15 +1,18 @@
 {
   "expo": {
-    "name": "ayurveda-super-app",
+    "name": "Ayurveda Super App",
     "slug": "ayurveda-super-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "scheme": "ayurveda",
+    "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ayurveda.superapp"
     },
     "android": {
+      "package": "com.ayurveda.superapp",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -20,6 +23,13 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-image",
+      "expo-secure-store",
+      "expo-local-authentication",
+      "expo-localization",
+      "expo-font"
+    ]
   }
 }

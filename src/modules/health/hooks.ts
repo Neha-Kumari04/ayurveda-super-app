@@ -29,11 +29,17 @@ export function useHealthTimeline() {
     queryKey: ['records', params],
     initialPageParam: 1,
     queryFn: ({ pageParam }) => healthApi.listRecords({ ...params, page: pageParam, pageSize: PAGE_SIZE }),
-    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+    getNextPageParam: (lastPage) => (lastPage?.hasMore ? (lastPage.page ?? 1) + 1 : undefined),
     placeholderData: (previousData) => previousData,
   });
 
-  const records = useMemo(() => query.data?.pages.flatMap((page) => page?.items ?? []) ?? [], [query.data]);
+  const records = useMemo(
+    () =>
+      query.data?.pages
+        ?.flatMap((page) => page?.items ?? [])
+        ?.filter((item): item is HealthRecord => Boolean(item && item.id)) ?? [],
+    [query.data],
+  );
 
   const setQuery = useCallback((q: string) => setState((s) => ({ ...s, query: q })), []);
   const setGroupBy = useCallback((groupBy: TimelineGroupBy) => setState((s) => ({ ...s, groupBy })), []);

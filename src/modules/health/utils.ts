@@ -13,35 +13,49 @@ export interface TimelineSection {
  * Records must already be sorted newest-first (the API guarantees this).
  */
 export function buildTimelineSections(
-  records: readonly HealthRecord[],
+  records: readonly HealthRecord[] | undefined | null,
   groupBy: TimelineGroupBy,
   locale?: string,
 ): TimelineSection[] {
+  if (!records || records.length === 0) return [];
   if (groupBy === 'none') {
-    return records.length > 0 ? [{ title: '', key: 'all', data: [...records] }] : [];
+    return [{ title: '', key: 'all', data: [...records] }];
   }
 
-  const keyFn: (record: HealthRecord) => string =
-    groupBy === 'month' ? (record) => monthKey(record.date) : (record) => yearKey(record.date);
+  const keyFn = (record: HealthRecord): string => {
+    if (!record || !record.date) return 'Unknown';
+    try {
+      return groupBy === 'month' ? monthKey(record.date) : yearKey(record.date);
+    } catch {
+      return 'Unknown';
+    }
+  };
+
   return groupBySortedKeys(records, keyFn).map((group) => ({
-    key: group.key,
-    title: groupBy === 'month' ? monthLabel(group.key, locale) : group.key,
-    data: group.data,
+    key: group.key || 'all',
+    title: groupBy === 'month' ? monthLabel(group.key, locale) : (group.key || 'All Records'),
+    data: group.data ?? [],
   }));
 }
 
 /** Extracts every tag used across records — powers the filter chip list. */
-export function collectTags(records: readonly HealthRecord[]): string[] {
+export function collectTags(records: readonly HealthRecord[] | undefined | null): string[] {
   const set = new Set<string>();
-  for (const record of records) {
-    for (const tag of record.tags) set.add(tag);
+  for (const record of records ?? []) {
+    if (record?.tags && Array.isArray(record.tags)) {
+      for (const tag of record.tags) {
+        if (tag) set.add(tag);
+      }
+    }
   }
   return [...set].sort();
 }
 
-export function collectProviders(records: readonly HealthRecord[]): string[] {
+export function collectProviders(records: readonly HealthRecord[] | undefined | null): string[] {
   const set = new Set<string>();
-  for (const record of records) set.add(record.provider);
+  for (const record of records ?? []) {
+    if (record?.provider) set.add(record.provider);
+  }
   return [...set].sort();
 }
 

@@ -50,7 +50,7 @@ export function RecordDetailScreen({ navigation, route }: Props) {
   }
 
   const record = recordQuery.data;
-  const metaEntries = Object.entries(record.meta).filter(([, value]) => {
+  const metaEntries = Object.entries(record.meta ?? {}).filter(([, value]) => {
     if (Array.isArray(value)) return value.length > 0;
     return value !== '' && value !== undefined && value !== null;
   });
@@ -135,7 +135,7 @@ export function RecordDetailScreen({ navigation, route }: Props) {
         </FadeInDownView>
       ) : null}
 
-      {record.tags.length > 0 ? (
+      {Array.isArray(record.tags) && record.tags.length > 0 ? (
         <FadeInDownView delay={240} duration={400}>
           <Card style={[styles.card, { borderColor: theme.colors.border }]}>
             <View style={styles.sectionHeaderRow}>
@@ -157,7 +157,7 @@ export function RecordDetailScreen({ navigation, route }: Props) {
             <Ionicons name="attach-outline" size={17} color={theme.colors.primary} />
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>{t('health.attachments')}</Text>
           </View>
-          {record.attachments.length > 0 ? (
+          {Array.isArray(record.attachments) && record.attachments.length > 0 ? (
             <AttachmentPreview attachments={record.attachments} />
           ) : (
             <Text style={[styles.body, { color: theme.colors.textMuted }]}>{t('health.noAttachments')}</Text>

@@ -24,46 +24,49 @@ export const RecordCard = memo(function ({ record, onPress, index = 0 }: RecordC
   const theme = useTheme();
   const { t } = useTranslation();
 
+  const type = record.type ?? 'consultation';
   const iconBg =
-    record.type === 'allergy'
+    type === 'allergy'
       ? theme.colors.dangerMuted
-      : record.type === 'prescription'
+      : type === 'prescription'
         ? theme.colors.successMuted
-        : record.type === 'lab_report' || record.type === 'vaccination'
+        : type === 'lab_report' || type === 'vaccination'
           ? theme.colors.infoMuted
           : theme.colors.primaryMuted;
 
   const iconColor =
-    record.type === 'allergy'
+    type === 'allergy'
       ? theme.colors.danger
-      : record.type === 'prescription'
+      : type === 'prescription'
         ? theme.colors.success
-        : record.type === 'lab_report' || record.type === 'vaccination'
+        : type === 'lab_report' || type === 'vaccination'
           ? theme.colors.info
           : theme.colors.primary;
+
+  const iconName = RECORD_TYPE_ICON[type] ?? 'document-text';
 
   return (
     <AnimatedCard
       index={index}
       onPress={() => onPress(record)}
       style={styles.card}
-      accessibilityLabel={`${record.type}: ${record.title}`}
+      accessibilityLabel={`${type}: ${record.title ?? ''}`}
     >
       <View style={styles.header}>
         <View style={[styles.iconWrap, { backgroundColor: iconBg }]}>
-          <Ionicons name={RECORD_TYPE_ICON[record.type]} size={20} color={iconColor} />
+          <Ionicons name={iconName} size={20} color={iconColor} />
         </View>
         <View style={styles.headerInfo}>
           <View style={styles.titleRow}>
             <Text style={[styles.title, { color: theme.colors.text }]} numberOfLines={1}>
-              {record.title}
+              {record.title ?? 'Untitled Record'}
             </Text>
             {record.syncStatus === 'pending' ? (
               <Badge label={t('common.pendingSync')} tone="warning" size="sm" />
             ) : null}
           </View>
           <Text style={[styles.meta, { color: theme.colors.textMuted }]}>
-            {t(`health.${record.type}`)} · {formatDate(record.date)} · {record.provider}
+            {t(`health.${type}`)} · {formatDate(record.date)} · {record.provider ?? ''}
           </Text>
         </View>
       </View>
@@ -74,7 +77,7 @@ export const RecordCard = memo(function ({ record, onPress, index = 0 }: RecordC
         </Text>
       ) : null}
 
-      {record.tags.length > 0 ? (
+      {Array.isArray(record.tags) && record.tags.length > 0 ? (
         <View style={styles.tags}>
           {record.tags.slice(0, 4).map((tag) => (
             <Chip key={tag} label={tag} size="sm" />
@@ -82,7 +85,7 @@ export const RecordCard = memo(function ({ record, onPress, index = 0 }: RecordC
         </View>
       ) : null}
 
-      {record.attachments.length > 0 ? (
+      {Array.isArray(record.attachments) && record.attachments.length > 0 ? (
         <AttachmentPreview attachments={record.attachments} />
       ) : null}
     </AnimatedCard>

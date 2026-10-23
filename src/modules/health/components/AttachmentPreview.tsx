@@ -18,7 +18,7 @@ export const AttachmentPreview = memo(function ({ attachments }: AttachmentPrevi
   const theme = useTheme();
   const [viewer, setViewer] = useState<Attachment | null>(null);
 
-  if (attachments.length === 0) return null;
+  if (!attachments || attachments.length === 0) return null;
 
   const open = (attachment: Attachment) => {
     if (attachment.kind === 'pdf') {

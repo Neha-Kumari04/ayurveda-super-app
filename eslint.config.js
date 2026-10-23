@@ -5,7 +5,7 @@ const reactPlugin = require('eslint-plugin-react');
 const reactHooksPlugin = require('eslint-plugin-react-hooks');
 
 module.exports = [
-  { ignores: ['node_modules/', '.expo/', 'coverage/', 'dist/', 'babel.config.js', 'metro.config.js', 'eslint.config.js'] },
+  { ignores: ['node_modules/', '.expo/', 'coverage/', 'dist/', 'babel.config.js', 'metro.config.js', 'eslint.config.js', 'backend/', 'scripts/'] },
   js.configs.recommended,
   {
     files: ['**/*.{ts,tsx}'],

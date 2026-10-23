@@ -28,20 +28,39 @@ export function isPast(iso: string, now = new Date()): boolean {
 
 /** "2026-10" — the grouping key used by the health timeline. */
 export function monthKey(iso: string): string {
+  if (!iso) return 'Unknown';
   const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'Unknown';
   const month = `${d.getMonth() + 1}`.padStart(2, '0');
   return `${d.getFullYear()}-${month}`;
 }
 
 /** "2026" — year grouping key. */
 export function yearKey(iso: string): string {
-  return `${new Date(iso).getFullYear()}`;
+  if (!iso) return 'Unknown';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return 'Unknown';
+  return `${d.getFullYear()}`;
 }
 
 /** Human label for a month key, e.g. "October 2026". */
 export function monthLabel(key: string, locale = 'en-US'): string {
-  const [year, month] = key.split('-').map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+  if (!key || key === 'Unknown') return 'Other Records';
+  try {
+    const parts = key.split('-');
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+    if (!year || !month || Number.isNaN(year) || Number.isNaN(month)) return key;
+    const d = new Date(year, month - 1, 1);
+    const validLocale = locale === 'hi' ? 'hi-IN' : locale || 'en-US';
+    return d.toLocaleDateString(validLocale, { month: 'long', year: 'numeric' });
+  } catch {
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const parts = key.split('-');
+    const year = Number(parts[0]);
+    const month = Number(parts[1]);
+    return `${MONTHS[(month - 1) % 12] || ''} ${year || ''}`.trim() || key;
+  }
 }
 
 /** Groups items by a derived key while preserving chronological ordering. */

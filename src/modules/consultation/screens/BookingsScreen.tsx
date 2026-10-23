@@ -7,7 +7,6 @@ import { AnimatedCard } from '@/components/ui/AnimatedCard';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { PressableScale } from '@/components/ui/PressableScale';
 import { useSettingsStore } from '@/store/settingsStore';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ErrorState } from '@/components/ui/ErrorState';

@@ -60,14 +60,14 @@ export function TimelineScreen({ navigation }: Props) {
 
 
   const renderSectionHeader = useCallback(
-    ({ section }: { section: { title: string; data: HealthRecord[] } }) => {
-      if (!section.title) return null;
+    ({ section }: { section: { title?: string; data: HealthRecord[] } }) => {
+      if (!section.title) return <View style={{ height: 0 }} />;
       return (
         <View style={[styles.sectionHeader, { backgroundColor: theme.colors.background }]}>
           <Text style={[styles.sectionTitle, { color: theme.colors.textSecondary }]} accessibilityRole="header">
             {section.title}
           </Text>
-          <Text style={[styles.sectionCount, { color: theme.colors.textMuted }]}>{section.data.length}</Text>
+          <Text style={[styles.sectionCount, { color: theme.colors.textMuted }]}>{section.data?.length ?? 0}</Text>
         </View>
       );
     },
@@ -224,9 +224,9 @@ export function TimelineScreen({ navigation }: Props) {
       <SectionList
         sections={sections}
         renderItem={renderRecord}
-        keyExtractor={(item: HealthRecord) => item.id}
+        keyExtractor={(item: HealthRecord, index: number) => item?.id ?? String(index)}
         renderSectionHeader={renderSectionHeader}
-        stickySectionHeadersEnabled
+        stickySectionHeadersEnabled={list.groupBy !== 'none'}
         ListHeaderComponent={header}
         ListEmptyComponent={ListEmptyComponent}
         ListFooterComponent={
@@ -238,7 +238,7 @@ export function TimelineScreen({ navigation }: Props) {
         initialNumToRender={8}
         maxToRenderPerBatch={10}
         windowSize={7}
-        removeClippedSubviews
+        removeClippedSubviews={false}
         keyboardShouldPersistTaps="handled"
         accessibilityLabel="Health records timeline"
       />
@@ -263,19 +263,21 @@ function PressableAddButton({ onPress, bottom }: { onPress: () => void; bottom: 
   const theme = useTheme();
   const { t } = useTranslation();
   return (
-    <PressableScale
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={t('health.addRecord')}
-      activeScale={0.9}
-      style={[
-        styles.fab,
-        { backgroundColor: theme.colors.primary, bottom },
-        theme.shadows.floating,
-      ]}
-    >
-      <Ionicons name="add" size={30} color={theme.colors.onPrimary} />
-    </PressableScale>
+    <View style={[styles.fabContainer, { bottom }]} pointerEvents="box-none">
+      <PressableScale
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={t('health.addRecord')}
+        activeScale={0.9}
+        style={[
+          styles.fab,
+          { backgroundColor: theme.colors.primary },
+          theme.shadows.floating,
+        ]}
+      >
+        <Ionicons name="add" size={30} color={theme.colors.onPrimary} />
+      </PressableScale>
+    </View>
   );
 }
 
@@ -364,9 +366,12 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
   sectionCount: { fontSize: 12 },
   loading: { gap: 10 },
-  fab: {
+  fabContainer: {
     position: 'absolute',
     right: 20,
+    zIndex: 99,
+  },
+  fab: {
     width: 58,
     height: 58,
     borderRadius: 29,
